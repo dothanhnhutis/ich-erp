@@ -1,6 +1,6 @@
+mod extractors;
 mod handler;
 mod routes;
-
 use crate::routes::create_app;
 
 #[tokio::main]
