@@ -1,6 +1,10 @@
 mod v1;
 use crate::routes::v1::routes_v1;
-use axum::{Router, routing::get};
+use axum::{Router, http::StatusCode, routing::get};
+
+async fn handle_not_found() -> (StatusCode, &'static str) {
+    (StatusCode::NOT_FOUND, "NOT_FOUND")
+}
 
 pub fn create_app<S>() -> Router<S>
 where
@@ -10,7 +14,8 @@ where
 
     let routes: Router<S> = Router::new()
         .merge(v1_routes)
-        .route("/", get(async || "Hello, World!"));
+        .route("/", get(async || "Hello, World!"))
+        .fallback(handle_not_found);
 
     Router::new().nest("/api", routes)
 }
