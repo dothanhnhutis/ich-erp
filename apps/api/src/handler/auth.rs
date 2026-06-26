@@ -1,7 +1,8 @@
-use axum::{Json, extract::rejection::JsonRejection, http::StatusCode, response};
+use axum::response::IntoResponse;
 use serde::{Deserialize, Serialize};
-use serde_json::{Value, json};
-use validator::{Validate, ValidationError};
+use validator::Validate;
+
+use crate::{error::ApiError, extractors::validator::ValidatedBodyJson};
 
 #[derive(Deserialize, Debug, Validate, Serialize)]
 pub struct CreateUser {
@@ -12,16 +13,8 @@ pub struct CreateUser {
 }
 
 pub async fn login_handler(
-    result: Result<Json<CreateUser>, JsonRejection>,
-) -> Result<response::Json<CreateUser>, (StatusCode, String)> {
-    match result {
-        Ok(payload) => match payload.validate() {
-            Ok(body) => Ok(payload),
-            Err(err) => Err((StatusCode::INTERNAL_SERVER_ERROR, err.to_string())),
-        },
-        Err(err) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Unknown error".to_string(),
-        )),
-    }
+    ValidatedBodyJson(payload): ValidatedBodyJson<CreateUser>,
+) -> Result<impl IntoResponse, ApiError> {
+    println!("{:#?}", payload);
+    Ok(("ok"))
 }

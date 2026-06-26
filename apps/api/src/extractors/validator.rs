@@ -4,12 +4,12 @@ use axum::{
 };
 use serde::de::DeserializeOwned;
 
-use crate::errors::ApiError;
+use crate::error::ApiError;
 
 #[derive(Debug, Clone, Copy)]
-pub struct ValidatedJson<T>(pub T);
+pub struct ValidatedBodyJson<T>(pub T);
 
-impl<T, S> FromRequest<S> for ValidatedJson<T>
+impl<T, S> FromRequest<S> for ValidatedBodyJson<T>
 where
     T: DeserializeOwned + validator::Validate,
     S: Send + Sync,
@@ -20,6 +20,6 @@ where
     async fn from_request(req: axum::extract::Request, state: &S) -> Result<Self, Self::Rejection> {
         let Json(value) = Json::<T>::from_request(req, state).await?;
         value.validate()?;
-        Ok(ValidatedJson(value))
+        Ok(ValidatedBodyJson(value))
     }
 }
