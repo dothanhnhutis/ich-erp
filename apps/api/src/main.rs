@@ -2,29 +2,40 @@ mod error;
 mod extractors;
 mod handler;
 mod routes;
+use std::sync::Arc;
+
 use crate::routes::create_app;
+use axum::{Router, extract::FromRef};
 use dotenvy::dotenv;
-use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
+use infrastructure::postgres::pool::init_db_pool;
+use shared::config::AppConfig;
+use sqlx::{self, PgPool};
+
+#[derive(Clone, FromRef)]
+
+struct AppState {
+    db: PgPool,
+    config: Arc<AppConfig>,
+}
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
-    // tracing_subscriber::fmt::init();
 
-    let filter_layer = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")); // Mặc định là info nếu RUST_LOG trống
+    tracing_subscriber::fmt::init();
 
-    tracing_subscriber::registry()
-        .with(filter_layer)
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_ansi(true) // Bật màu sắc trên terminal
-                .with_level(true) // Hiển thị mức log (INFO, DEBUG)
-                .with_file(true) // Hiển thị tên file tạo ra log
-                .with_line_number(true), // Hiển thị số dòng code tạo ra log
-        )
-        .init();
+    let config = AppConfig::from_env().expect("Failed to load config");
 
-    let app = create_app();
+    let pool = init_db_pool(&config.database_url)
+        .await
+        .expect("không kết nối được database");
+
+    let app = Router::new()
+        .nest("/api", create_app())
+        .with_state(AppState {
+            db: pool,
+            config: Arc::new(config),
+        });
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
     let addr = format!("{}:{}", "0.0.0.0", 4000);

@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 
+infrastructure = { path = "../../libs/infrastructure" }
 application = { path = "../../libs/application" }
+shared = { path = "../../libs/shared" }
 
 
 axum.workspace = true
@@ -17,3 +19,4 @@ thiserror.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 dotenvy.workspace = true
+sqlx.workspace = true

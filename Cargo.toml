@@ -1,5 +1,5 @@
 [workspace]
-members = ["apps/api", "libs/application"]
+members = ["apps/api", "libs/application", "libs/infrastructure", "libs/shared"]
 resolver = "3"
 
 [workspace.dependencies]
@@ -18,7 +18,7 @@ tower-http = { version = "0.7.0", features = [
 # 2. Database (PostgreSQL không dùng ORM)
 # Hỗ trợ compile-time SQL check, UUIDv7 và JSONB
 sqlx = { version = "0.9.0", features = [
-    "runtime-tokio-native-tls",
+    "runtime-tokio", "tls-native-tls",
     "postgres",
     "uuid",
     "chrono",
