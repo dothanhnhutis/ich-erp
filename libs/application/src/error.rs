@@ -1,3 +1,4 @@
+use domain::errors::DomainError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -13,4 +14,10 @@ pub enum AppError {
 
     #[error("Internal error: {0}")]
     Internal(String),
+}
+
+impl From<DomainError> for AppError {
+    fn from(e: DomainError) -> Self {
+        AppError::Internal(e.to_string())
+    }
 }

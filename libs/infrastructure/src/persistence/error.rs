@@ -1,7 +1,7 @@
-use application::error::AppError;
+use domain::errors::DomainError;
 use sqlx::error::ErrorKind;
 
-pub fn map_sqlx_error(err: sqlx::Error) -> AppError {
+pub fn map_sqlx_error(err: sqlx::Error) -> DomainError {
     if let Some(db) = err.as_database_error() {
         match db.kind() {
             ErrorKind::UniqueViolation => {
@@ -11,14 +11,13 @@ pub fn map_sqlx_error(err: sqlx::Error) -> AppError {
                     Some("users_username_key") => "Username đã được sử dụng",
                     _ => "Dữ liệu đã tồn tại",
                 };
-                return AppError::Conflict(msg.into());
+                return DomainError::Conflict(msg.into());
             }
-            ErrorKind::ForeignKeyViolation => {
-                return AppError::Validation("Tham chiếu không hợp lệ".into());
-            }
-            _ => {} // ErrorKind là #[non_exhaustive] → BẮT BUỘC có nhánh chặn
+            // ErrorKind::ForeignKeyViolation => {
+            //     return DomainError::Validation("Tham chiếu không hợp lệ".into());
+            // }
+            _ => {}
         }
     }
-    // còn lại: mất kết nối, timeout, decode... → nội bộ, không lộ cho client
-    AppError::Internal(err.to_string())
+    DomainError::Conflict(err.to_string())
 }

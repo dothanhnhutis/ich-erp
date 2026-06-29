@@ -12,7 +12,6 @@ use shared::config::AppConfig;
 use sqlx::{self, PgPool};
 
 #[derive(Clone, FromRef)]
-
 struct AppState {
     db: PgPool,
     config: Arc<AppConfig>,
@@ -30,12 +29,12 @@ async fn main() {
         .await
         .expect("không kết nối được database");
 
-    let app = Router::new()
-        .nest("/api", create_app())
-        .with_state(AppState {
-            db: pool,
-            config: Arc::new(config),
-        });
+    let state = AppState {
+        db: pool,
+        config: Arc::new(config),
+    };
+
+    let app = Router::new().nest("/api", create_app()).with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
     let addr = format!("{}:{}", "0.0.0.0", 4000);
