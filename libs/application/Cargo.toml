@@ -9,3 +9,4 @@ domain = { path= "../domain" }
 thiserror.workspace = true
 validator.workspace = true
 serde.workspace = true
+argon2.workspace = true

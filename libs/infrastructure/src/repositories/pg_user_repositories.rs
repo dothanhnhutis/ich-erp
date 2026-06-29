@@ -4,7 +4,7 @@ use domain::{
     repositories::UserRepository,
 };
 use sqlx::{
-    PgPool,
+    AssertSqlSafe, PgPool,
     types::chrono::{DateTime, Utc},
 };
 use std::str::FromStr;
@@ -73,7 +73,7 @@ impl PgUserRepository {
 impl UserRepository for PgUserRepository {
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError> {
         let sql = format!("{} WHERE email = $1 AND deleted_at IS NULL", SELECT_USER);
-        let row: Option<UserRow> = sqlx::query_as(&sql)
+        let row: Option<UserRow> = sqlx::query_as(AssertSqlSafe(sql))
             .bind(email)
             .fetch_optional(&self.pool)
             .await

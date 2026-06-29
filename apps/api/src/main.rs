@@ -5,15 +5,18 @@ mod routes;
 use std::sync::Arc;
 
 use crate::routes::create_app;
+use application::services::auth_service::AuthService;
 use axum::{Router, extract::FromRef};
 use dotenvy::dotenv;
-use infrastructure::postgres::pool::init_db_pool;
+use infrastructure::{
+    postgres::pool::init_db_pool, repositories::pg_user_repositories::PgUserRepository,
+};
 use shared::config::AppConfig;
 use sqlx::{self, PgPool};
 
 #[derive(Clone, FromRef)]
 struct AppState {
-    db: PgPool,
+    auth_service: Arc<AuthService<PgUserRepository>>,
     config: Arc<AppConfig>,
 }
 
@@ -29,8 +32,11 @@ async fn main() {
         .await
         .expect("không kết nối được database");
 
+    let user_repo = PgUserRepository::new(pool.clone());
+
+    let auth_service = Arc::new(AuthService::new(user_repo.clone()));
     let state = AppState {
-        db: pool,
+        auth_service,
         config: Arc::new(config),
     };
 

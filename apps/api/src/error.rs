@@ -56,11 +56,11 @@ fn domain_to_response(err: AppError) -> Response {
     let (status, msg) = match err {
         AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
         AppError::Validation(msg) => (StatusCode::UNPROCESSABLE_ENTITY, msg),
+        AppError::Unauthorized(msg) => (StatusCode::UNAUTHORIZED, msg),
         AppError::Internal(msg) => {
             tracing::error!("Internal error: {msg}"); // log đầy đủ phía server
             (StatusCode::INTERNAL_SERVER_ERROR, "Lỗi hệ thống".to_owned()) // client nhận câu chung
-        }
-        AppError::Conflict(msg) => (StatusCode::CONFLICT, msg),
+        } // AppError::Conflict(msg) => (StatusCode::CONFLICT, msg),
     };
     (status, Json(json!({ "error": msg }))).into_response()
 }
