@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 
+domain = { path = "../../libs/domain" }
 infrastructure = { path = "../../libs/infrastructure" }
 application = { path = "../../libs/application" }
 shared = { path = "../../libs/shared" }

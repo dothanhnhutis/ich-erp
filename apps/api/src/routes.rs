@@ -6,12 +6,12 @@ async fn handle_not_found() -> (StatusCode, &'static str) {
     (StatusCode::NOT_FOUND, "NOT_FOUND")
 }
 
-pub fn create_app<S>() -> Router<S>
+pub fn create_routes<S>(state: AppState) -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
     AppState: FromRef<S>,
 {
-    let v1_routes: Router<S> = Router::new().nest("/v1", routes_v1());
+    let v1_routes: Router<S> = Router::new().nest("/v1", routes_v1(state.clone()));
 
     Router::new()
         .merge(v1_routes)

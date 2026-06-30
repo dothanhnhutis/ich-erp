@@ -1,8 +1,9 @@
 mod error;
 mod extractors;
 mod handler;
+mod middleware;
 mod routes;
-use crate::routes::create_app;
+use crate::routes::create_routes;
 use application::services::auth_service::AuthService;
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
@@ -48,7 +49,9 @@ async fn main() {
         config: Arc::new(config),
     };
 
-    let app = Router::new().nest("/api", create_app()).with_state(state);
+    let app = Router::new()
+        .nest("/api", create_routes(state.clone()))
+        .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
     let addr = format!("{}:{}", "0.0.0.0", 4000);
