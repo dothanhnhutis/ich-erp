@@ -2,21 +2,24 @@ mod error;
 mod extractors;
 mod handler;
 mod routes;
-use std::sync::Arc;
-
 use crate::routes::create_app;
 use application::services::auth_service::AuthService;
 use axum::{Router, extract::FromRef};
+use chrono::Duration;
 use dotenvy::dotenv;
 use infrastructure::{
-    postgres::pool::init_db_pool, repositories::pg_user_repositories::PgUserRepository,
+    postgres::pool::init_db_pool,
+    repositories::{
+        pg_user_repositories::PgUserRepository,
+        pg_user_session_repositories::PgUserSessionRepository,
+    },
 };
 use shared::config::AppConfig;
-use sqlx::{self, PgPool};
+use std::{net::SocketAddr, sync::Arc};
 
 #[derive(Clone, FromRef)]
 struct AppState {
-    auth_service: Arc<AuthService<PgUserRepository>>,
+    auth_service: Arc<AuthService<PgUserRepository, PgUserSessionRepository>>,
     config: Arc<AppConfig>,
 }
 
@@ -33,8 +36,13 @@ async fn main() {
         .expect("không kết nối được database");
 
     let user_repo = PgUserRepository::new(pool.clone());
+    let user_session_repo = PgUserSessionRepository::new(pool.clone());
 
-    let auth_service = Arc::new(AuthService::new(user_repo.clone()));
+    let auth_service = Arc::new(AuthService::new(
+        user_repo.clone(),
+        user_session_repo.clone(),
+        Duration::seconds(config.session_ttl_secs),
+    ));
     let state = AppState {
         auth_service,
         config: Arc::new(config),
@@ -45,5 +53,12 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();
     let addr = format!("{}:{}", "0.0.0.0", 4000);
     tracing::info!("Server đang chạy tại: http://{}", addr);
-    axum::serve(listener, app).await.unwrap();
+    // axum::serve(listener, app).await.unwrap();
+
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .unwrap();
 }

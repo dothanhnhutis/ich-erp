@@ -1,4 +1,4 @@
-use application::error::AppError;
+use application::errors::AppError;
 use axum::{
     Json,
     extract::rejection::JsonRejection,
@@ -61,6 +61,7 @@ fn domain_to_response(err: AppError) -> Response {
             tracing::error!("Internal error: {msg}"); // log đầy đủ phía server
             (StatusCode::INTERNAL_SERVER_ERROR, "Lỗi hệ thống".to_owned()) // client nhận câu chung
         } // AppError::Conflict(msg) => (StatusCode::CONFLICT, msg),
+        AppError::Conflict(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
     };
     (status, Json(json!({ "error": msg }))).into_response()
 }

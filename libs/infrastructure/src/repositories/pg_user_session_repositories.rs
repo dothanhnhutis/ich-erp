@@ -1,13 +1,14 @@
 use domain::{
     entities::session::{NewSession, Session},
-    errors::DomainError,
-    repositories::UserSessionRepository,
+    repositories::{RepositoryError, UserSessionRepository},
 };
 use sqlx::{
     PgPool,
     types::chrono::{DateTime, Utc},
 };
 use uuid::Uuid;
+
+use crate::persistence::error::map_sqlx_error;
 
 /// Struct riêng cho DB layer — tách biệt khỏi domain entity.
 /// `ip_address` lấy về dạng text (`ip_address::text`) vì cột là kiểu INET.
@@ -67,17 +68,17 @@ const INSERT_SESSION: &str = r#"
         revoked_at, revoke_reason, expires_at, created_at, updated_at
 "#;
 
-fn map_sqlx_err(e: sqlx::Error) -> DomainError {
-    if let sqlx::Error::Database(db) = &e {
-        if db.is_unique_violation() {
-            return AppError::Validation("Session token đã tồn tại".into());
-        }
-        if db.is_foreign_key_violation() {
-            return AppError::Validation("User không tồn tại".into());
-        }
-    }
-    DomainError::Conflict(e.to_string())
-}
+// fn map_sqlx_err(e: sqlx::Error) -> RepositoryError {
+//     if let sqlx::Error::Database(db) = &e {
+//         if db.is_unique_violation() {
+//             return RepositoryError::Validation("Session token đã tồn tại".into());
+//         }
+//         if db.is_foreign_key_violation() {
+//             return AppError::Validation("User không tồn tại".into());
+//         }
+//     }
+//     RepositoryError::Unexpected(Box::new(e))
+// }
 
 #[derive(Clone)]
 pub struct PgUserSessionRepository {
@@ -91,7 +92,7 @@ impl PgUserSessionRepository {
 }
 
 impl UserSessionRepository for PgUserSessionRepository {
-    async fn create(&self, new_session: NewSession) -> Result<Session, DomainError> {
+    async fn create(&self, new_session: NewSession) -> Result<Session, RepositoryError> {
         let row: SessionRow = sqlx::query_as(INSERT_SESSION)
             .bind(new_session.user_id)
             .bind(new_session.token_hash)
@@ -105,7 +106,7 @@ impl UserSessionRepository for PgUserSessionRepository {
             .bind(new_session.expires_at)
             .fetch_one(&self.pool)
             .await
-            .map_err(map_sqlx_err)?;
+            .map_err(map_sqlx_error)?;
 
         Ok(row.into())
     }

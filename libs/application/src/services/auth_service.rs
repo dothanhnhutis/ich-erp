@@ -1,27 +1,44 @@
 use argon2::{self, PasswordVerifier};
-use domain::{entities::user::UserStatus, repositories::UserRepository};
-
-use crate::{
-    dto::auth_dto::{LoginRequest, LoginResponse},
-    error::AppError,
+use chrono::Duration;
+use domain::{
+    entities::{session::NewSession, user::UserStatus},
+    repositories::{UserRepository, UserSessionRepository},
 };
 
-pub struct AuthService<UR>
+use crate::{
+    dto::auth_dto::{ClientContext, LoginRequest, LoginResponse},
+    errors::AppError,
+    security::session_token::SessionToken,
+};
+
+pub struct AuthService<UR, USR>
 where
     UR: UserRepository,
+    USR: UserSessionRepository,
 {
     user_repo: UR,
+    user_session_repo: USR,
+    session_ttl: Duration,
 }
 
-impl<UR> AuthService<UR>
+impl<UR, USR> AuthService<UR, USR>
 where
     UR: UserRepository,
+    USR: UserSessionRepository,
 {
-    pub fn new(user_repo: UR) -> Self {
-        Self { user_repo }
+    pub fn new(user_repo: UR, user_session_repo: USR, session_ttl: Duration) -> Self {
+        Self {
+            user_repo,
+            user_session_repo,
+            session_ttl,
+        }
     }
 
-    pub async fn login(&self, request: LoginRequest) -> Result<LoginResponse, AppError> {
+    pub async fn login(
+        &self,
+        request: LoginRequest,
+        ctx: ClientContext,
+    ) -> Result<LoginResponse, AppError> {
         let user = self
             .user_repo
             .find_by_email(&request.email)
@@ -51,11 +68,29 @@ where
             .verify_password(request.password.as_bytes(), &parsed)
             .map_err(|_| AppError::Unauthorized("Email hoặc mật khẩu không đúng".into()))?;
 
+        let token = SessionToken::generate();
+        let expires_at = chrono::Utc::now() + self.session_ttl;
+
+        let new_session = NewSession {
+            user_id: user.id,
+            token_hash: token.hash,
+            device_type: request.device_type,
+            device_id: request.device_id,
+            device_name: request.device_name,
+            platform: request.platform,
+            app_version: request.app_version,
+            user_agent: ctx.user_agent,
+            ip_address: ctx.ip_address,
+            expires_at,
+        };
+
+        self.user_session_repo.create(new_session).await?;
+
         // 5. Return response — trả token THÔ cho client
         Ok(LoginResponse {
             user_id: user.id.to_string(),
-            session: String::new(),
-            expires_in: 10000,
+            session: token.raw,
+            expires_in: self.session_ttl.num_seconds(),
         })
     }
 }

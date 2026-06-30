@@ -4,9 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-domain = { path= "../domain" }
+domain = { path = "../domain" }
 
 thiserror.workspace = true
 validator.workspace = true
 serde.workspace = true
 argon2.workspace = true
+rand.workspace = true
+sha2.workspace = true
+chrono.workspace = true
+hex.workspace = true

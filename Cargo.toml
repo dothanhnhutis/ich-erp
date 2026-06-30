@@ -1,5 +1,11 @@
 [workspace]
-members = ["apps/api", "libs/application", "libs/infrastructure", "libs/shared", "libs/domain"]
+members = [
+    "apps/api",
+    "libs/application",
+    "libs/infrastructure",
+    "libs/shared",
+    "libs/domain",
+]
 resolver = "3"
 
 [workspace.dependencies]
@@ -18,7 +24,8 @@ tower-http = { version = "0.7.0", features = [
 # 2. Database (PostgreSQL không dùng ORM)
 # Hỗ trợ compile-time SQL check, UUIDv7 và JSONB
 sqlx = { version = "0.9.0", features = [
-    "runtime-tokio", "tls-native-tls",
+    "runtime-tokio",
+    "tls-native-tls",
     "postgres",
     "uuid",
     "chrono",
@@ -37,7 +44,7 @@ uuid = { version = "1.23.1", features = ["v7", "serde"] }
 chrono = { version = "0.4.44", features = ["serde"] }
 time = "0.3"
 dotenvy = "0.15.7"
-anyhow = "1.0.102"
+anyhow = "1.0.103"
 thiserror = "2.0.18"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
@@ -48,8 +55,8 @@ moka = { version = "0.12.15", features = ["future"] }
 
 # 6. Security (JWT & Password Hashing)
 jsonwebtoken = "10.4.0"
-argon2 = "0.5.3"
-rand = "0.10.1"
+argon2 = { version = "0.5.3", features = ["std"] }
+rand = { version = "0.10.1", features = ["std"] }
 sha2 = "0.11.0"
 hex = "0.4"
 
@@ -69,4 +76,3 @@ lto = true        # Link Time Optimization (giảm kích thước file build)
 codegen-units = 1 # Giúp compiler tối ưu hóa tốt hơn
 panic = "abort"   # Giảm kích thước file bằng cách bỏ qua stack unwinding
 strip = true      # Loại bỏ các ký tự debug để file cực nhẹ
-

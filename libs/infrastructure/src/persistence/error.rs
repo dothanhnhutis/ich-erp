@@ -1,23 +1,21 @@
-use domain::errors::DomainError;
+use domain::repositories::RepositoryError;
 use sqlx::error::ErrorKind;
 
-pub fn map_sqlx_error(err: sqlx::Error) -> DomainError {
+pub fn map_sqlx_error(err: sqlx::Error) -> RepositoryError {
     if let Some(db) = err.as_database_error() {
         match db.kind() {
             ErrorKind::UniqueViolation => {
-                // constraint() cho biết ràng buộc NÀO bị vi phạm
-                let msg = match db.constraint() {
-                    Some("users_email_key") => "Email đã được sử dụng",
-                    Some("users_username_key") => "Username đã được sử dụng",
-                    _ => "Dữ liệu đã tồn tại",
-                };
-                return DomainError::Conflict(msg.into());
+                return RepositoryError::UniqueViolation(
+                    db.constraint().unwrap_or_default().to_owned(),
+                );
             }
-            // ErrorKind::ForeignKeyViolation => {
-            //     return DomainError::Validation("Tham chiếu không hợp lệ".into());
-            // }
+            ErrorKind::ForeignKeyViolation => {
+                return RepositoryError::ForeignKeyViolation(
+                    db.constraint().unwrap_or_default().to_owned(),
+                );
+            }
             _ => {}
         }
     }
-    DomainError::Conflict(err.to_string())
+    RepositoryError::Unexpected(Box::new(err))
 }

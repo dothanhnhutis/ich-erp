@@ -1,10 +1,11 @@
 use domain::{
     entities::user::{User, UserStatus},
     errors::DomainError,
-    repositories::UserRepository,
+    repositories::{RepositoryError, UserRepository},
 };
 use sqlx::{
     AssertSqlSafe, PgPool,
+    error::ErrorKind,
     types::chrono::{DateTime, Utc},
 };
 use std::str::FromStr;
@@ -57,21 +58,27 @@ impl PgUserRepository {
         Self { pool }
     }
 }
-
-// fn map_sqlx_err(e: sqlx::Error) -> DomainError {
-//     if let sqlx::Error::Database(db) = &e {
-//         if db.is_unique_violation() {
-//             return DomainError::AlreadyExists("Email đã tồn tại".into());
-//         }
-//         if db.is_foreign_key_violation() {
-//             return DomainError::Validation("Role không tồn tại".into());
+// pub fn map_sqlx_error(err: sqlx::Error) -> RepositoryError {
+//     if let Some(db) = err.as_database_error() {
+//         match db.kind() {
+//             ErrorKind::UniqueViolation => {
+//                 return RepositoryError::UniqueViolation(
+//                     db.constraint().unwrap_or_default().to_owned(),
+//                 );
+//             }
+//             ErrorKind::ForeignKeyViolation => {
+//                 return RepositoryError::ForeignKeyViolation(
+//                     db.constraint().unwrap_or_default().to_owned(),
+//                 );
+//             }
+//             _ => {}
 //         }
 //     }
-//     DomainError::Internal(e.to_string())
+//     RepositoryError::Unexpected(Box::new(err)) // (2) box lại, sqlx ở lại infra
 // }
 
 impl UserRepository for PgUserRepository {
-    async fn find_by_email(&self, email: &str) -> Result<Option<User>, DomainError> {
+    async fn find_by_email(&self, email: &str) -> Result<Option<User>, RepositoryError> {
         let sql = format!("{} WHERE email = $1 AND deleted_at IS NULL", SELECT_USER);
         let row: Option<UserRow> = sqlx::query_as(AssertSqlSafe(sql))
             .bind(email)
@@ -79,6 +86,6 @@ impl UserRepository for PgUserRepository {
             .await
             .map_err(map_sqlx_error)?;
 
-        row.map(User::try_from).transpose()
+        Ok(row.map(User::try_from).transpose()?) // (4) ? tự đổi DomainError -> Mapping
     }
 }

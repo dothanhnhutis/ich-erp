@@ -9,7 +9,6 @@ async fn handle_not_found() -> (StatusCode, &'static str) {
 pub fn create_app<S>() -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
-    // PgPool: FromRef<S>,
     AppState: FromRef<S>,
 {
     let v1_routes: Router<S> = Router::new().nest("/v1", routes_v1());
