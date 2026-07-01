@@ -5,10 +5,18 @@ members = [
     "libs/infrastructure",
     "libs/shared",
     "libs/domain",
+    "apps/iops/src-tauri"
 ]
 resolver = "3"
 
+
+
 [workspace.dependencies]
+
+# Desktop app
+tauri-build = { version = "2", features = [] }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
 
 # 1. Web Framework & Async Runtime
 axum = { version = "0.8.9", features = ["macros"] }
@@ -42,7 +50,7 @@ reqwest = { version = "0.13.3", features = ["json"] }
 # 4. Utilities
 uuid = { version = "1.23.1", features = ["v7", "serde"] }
 chrono = { version = "0.4.44", features = ["serde"] }
-time = "0.3"
+time = "0.3.53"
 dotenvy = "0.15.7"
 anyhow = "1.0.103"
 thiserror = "2.0.18"
