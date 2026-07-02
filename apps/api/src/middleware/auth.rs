@@ -13,11 +13,10 @@ use crate::error::ApiError;
 
 /// Ngữ cảnh xác thực, được middleware nhét vào request extensions
 /// để các handler protected đọc lại qua `Extension<AuthContext>`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AuthContext {
-    // pub user: User,
-    // pub session: Session,
-    username: String,
+    pub user: User,
+    pub session: Session,
 }
 
 /// Middleware bắt buộc đăng nhập: lấy token từ Bearer/cookie, xác thực, gắn AuthContext.
@@ -32,9 +31,7 @@ pub async fn require_auth(
 
     let (session, user) = state.auth_service.authenticate(&token).await?;
 
-    req.extensions_mut().insert(AuthContext {
-        username: "sss".to_string(),
-    });
+    req.extensions_mut().insert(AuthContext { session, user });
     Ok(next.run(req).await)
 }
 

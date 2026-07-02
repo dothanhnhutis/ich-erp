@@ -68,17 +68,21 @@ const INSERT_SESSION: &str = r#"
         revoked_at, revoke_reason, expires_at, created_at, updated_at
 "#;
 
-// fn map_sqlx_err(e: sqlx::Error) -> RepositoryError {
-//     if let sqlx::Error::Database(db) = &e {
-//         if db.is_unique_violation() {
-//             return RepositoryError::Validation("Session token đã tồn tại".into());
-//         }
-//         if db.is_foreign_key_violation() {
-//             return AppError::Validation("User không tồn tại".into());
-//         }
-//     }
-//     RepositoryError::Unexpected(Box::new(e))
-// }
+const SELECT_SESSION_BY_TOKEN: &str = r#"
+    SELECT
+        id, user_id, token_hash, device_id, device_name, device_type,
+        platform, app_version, user_agent,
+        ip_address::text AS ip_address,
+        revoked_at, revoke_reason, expires_at, created_at, updated_at
+    FROM user_sessions
+    WHERE token_hash = $1
+"#;
+
+const TOUCH_EXPIRES: &str = r#"
+    UPDATE user_sessions
+    SET expires_at = $2, updated_at = NOW()
+    WHERE id = $1 AND revoked_at IS NULL
+"#;
 
 #[derive(Clone)]
 pub struct PgUserSessionRepository {
@@ -109,5 +113,33 @@ impl UserSessionRepository for PgUserSessionRepository {
             .map_err(map_sqlx_error)?;
 
         Ok(row.into())
+    }
+
+    async fn find_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> Result<Option<Session>, RepositoryError> {
+        let row: Option<SessionRow> = sqlx::query_as(SELECT_SESSION_BY_TOKEN)
+            .bind(token_hash)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(map_sqlx_error)?;
+
+        Ok(row.map(Session::from))
+    }
+
+    async fn touch_expires(
+        &self,
+        id: Uuid,
+        expires_at: DateTime<Utc>,
+    ) -> Result<(), RepositoryError> {
+        sqlx::query(TOUCH_EXPIRES)
+            .bind(id)
+            .bind(expires_at)
+            .execute(&self.pool)
+            .await
+            .map_err(map_sqlx_error)?;
+
+        Ok(())
     }
 }

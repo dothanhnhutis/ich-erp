@@ -1,3 +1,5 @@
+use chrono::{DateTime, Utc};
+
 use crate::{
     entities::{
         session::{NewSession, Session},
@@ -29,6 +31,11 @@ pub trait UserRepository: Send + Sync {
         &self,
         email: &str,
     ) -> impl Future<Output = Result<Option<User>, RepositoryError>> + Send;
+
+    fn find_by_id(
+        &self,
+        id: uuid::Uuid,
+    ) -> impl Future<Output = Result<Option<User>, RepositoryError>> + Send;
 }
 
 pub trait UserSessionRepository: Send + Sync {
@@ -36,4 +43,15 @@ pub trait UserSessionRepository: Send + Sync {
         &self,
         new_session: NewSession,
     ) -> impl Future<Output = Result<Session, RepositoryError>> + Send;
+
+    fn find_by_token_hash(
+        &self,
+        token_hash: &str,
+    ) -> impl Future<Output = Result<Option<Session>, RepositoryError>> + Send;
+
+    fn touch_expires(
+        &self,
+        id: uuid::Uuid,
+        expires_at: DateTime<Utc>,
+    ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }

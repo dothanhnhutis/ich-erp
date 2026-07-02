@@ -7,8 +7,10 @@ use crate::routes::create_routes;
 use application::services::auth_service::AuthService;
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
+use domain::cache::SessionCache;
 use dotenvy::dotenv;
 use infrastructure::{
+    cache::{init_redis, session::RedisSessionCache},
     postgres::pool::init_db_pool,
     repositories::{
         pg_user_repositories::PgUserRepository,
@@ -20,7 +22,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 #[derive(Clone, FromRef)]
 struct AppState {
-    auth_service: Arc<AuthService<PgUserRepository, PgUserSessionRepository>>,
+    auth_service: Arc<AuthService<PgUserRepository, PgUserSessionRepository, RedisSessionCache>>,
     config: Arc<AppConfig>,
 }
 
@@ -48,7 +50,10 @@ async fn main() {
     let auth_service = Arc::new(AuthService::new(
         user_repo.clone(),
         user_session_repo.clone(),
+        cache,
         Duration::seconds(config.session_ttl_secs),
+        Duration::seconds(config.session_cache_ttl_secs),
+        Duration::seconds(config.session_db_sync_secs),
     ));
     let state = AppState {
         auth_service,

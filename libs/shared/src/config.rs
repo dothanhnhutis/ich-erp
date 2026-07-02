@@ -7,6 +7,11 @@ pub struct AppConfig {
     pub session_ttl_secs: i64,
     pub cookie_secure: bool,
     pub cookie_domain: Option<String>,
+    pub redis_url: String,
+    /// TTL của bản cache phiên trong Redis (giây). Ngắn hơn session TTL để giới hạn staleness.
+    pub session_cache_ttl_secs: i64,
+    /// Khoảng tối thiểu giữa 2 lần ghi `expires_at` xuống DB (giây) — throttle.
+    pub session_db_sync_secs: i64,
 }
 
 // impl AppConfig {
@@ -42,6 +47,15 @@ impl AppConfig {
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(false),
             cookie_domain: env::var("COOKIE_DOMAIN").ok(),
+            redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
+            session_cache_ttl_secs: env::var("SESSION_CACHE_TTL_SECS")
+                .unwrap_or_else(|_| "3600".into())
+                .parse()
+                .map_err(|_| "SESSION_CACHE_TTL_SECS must be an integer (seconds)")?,
+            session_db_sync_secs: env::var("SESSION_DB_SYNC_SECS")
+                .unwrap_or_else(|_| "60".into())
+                .parse()
+                .map_err(|_| "SESSION_DB_SYNC_SECS must be an integer (seconds)")?,
         })
     }
 }

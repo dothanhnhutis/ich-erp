@@ -1,7 +1,9 @@
 use argon2::{self, PasswordVerifier};
 use chrono::Duration;
 use domain::{
+    cache::{self, SessionCache},
     entities::{
+        cached_session::CachedSession,
         session::{NewSession, Session},
         user::{User, UserStatus},
     },
@@ -14,26 +16,41 @@ use crate::{
     security::session_token::{SessionToken, hash_token},
 };
 
-pub struct AuthService<UR, USR>
+pub struct AuthService<UR, USR, C>
 where
     UR: UserRepository,
     USR: UserSessionRepository,
+    C: SessionCache,
 {
     user_repo: UR,
     user_session_repo: USR,
+    cache: C,
     session_ttl: Duration,
+    cache_ttl: Duration,
+    db_sync_interval: Duration,
 }
 
-impl<UR, USR> AuthService<UR, USR>
+impl<UR, USR, C> AuthService<UR, USR, C>
 where
     UR: UserRepository,
     USR: UserSessionRepository,
+    C: SessionCache,
 {
-    pub fn new(user_repo: UR, user_session_repo: USR, session_ttl: Duration) -> Self {
+    pub fn new(
+        user_repo: UR,
+        user_session_repo: USR,
+        cache: C,
+        session_ttl: Duration,
+        cache_ttl: Duration,
+        db_sync_interval: Duration,
+    ) -> Self {
         Self {
             user_repo,
             user_session_repo,
+            cache,
             session_ttl,
+            cache_ttl,
+            db_sync_interval,
         }
     }
 
@@ -116,7 +133,7 @@ where
             Some(c) => (c.session, c.user, c.db_synced_at),
             None => {
                 let s = self
-                    .session_repo
+                    .user_session_repo
                     .find_by_token_hash(&token_hash)
                     .await?
                     .ok_or_else(|| AppError::Unauthorized("Phiên đăng nhập không hợp lệ".into()))?;
@@ -154,7 +171,7 @@ where
         // 4. Throttle ghi DB; lỗi DB chỉ log (giá trị in-memory đã gia hạn).
         if now - db_synced_at >= self.db_sync_interval {
             match self
-                .session_repo
+                .user_session_repo
                 .touch_expires(session.id, new_expires)
                 .await
             {

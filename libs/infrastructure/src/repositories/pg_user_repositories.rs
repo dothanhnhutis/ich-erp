@@ -69,4 +69,15 @@ impl UserRepository for PgUserRepository {
 
         Ok(row.map(User::try_from).transpose()?) // (4) ? tự đổi DomainError -> Mapping
     }
+
+    async fn find_by_id(&self, id: uuid::Uuid) -> Result<Option<User>, RepositoryError> {
+        let sql = format!("{} WHERE id = $1 AND deleted_at IS NULL", SELECT_USER);
+        let row: Option<UserRow> = sqlx::query_as(AssertSqlSafe(sql))
+            .bind(id)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(map_sqlx_error)?;
+
+        Ok(row.map(User::try_from).transpose()?)
+    }
 }
