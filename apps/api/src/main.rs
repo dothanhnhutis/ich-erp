@@ -7,13 +7,12 @@ use crate::routes::create_routes;
 use application::services::auth_service::AuthService;
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
-use domain::cache::SessionCache;
 use dotenvy::dotenv;
 use infrastructure::{
     cache::{init_redis, session::RedisSessionCache},
     postgres::pool::init_db_pool,
     repositories::{
-        pg_user_repositories::PgUserRepository,
+        pg_role_repositories::PgRoleRepository, pg_user_repositories::PgUserRepository,
         pg_user_session_repositories::PgUserSessionRepository,
     },
 };
@@ -22,7 +21,9 @@ use std::{net::SocketAddr, sync::Arc};
 
 #[derive(Clone, FromRef)]
 struct AppState {
-    auth_service: Arc<AuthService<PgUserRepository, PgUserSessionRepository, RedisSessionCache>>,
+    auth_service: Arc<
+        AuthService<PgUserRepository, PgUserSessionRepository, PgRoleRepository, RedisSessionCache>,
+    >,
     config: Arc<AppConfig>,
 }
 
@@ -46,10 +47,12 @@ async fn main() {
 
     let user_repo = PgUserRepository::new(pool.clone());
     let user_session_repo = PgUserSessionRepository::new(pool.clone());
+    let role_repo = PgRoleRepository::new(pool.clone());
 
     let auth_service = Arc::new(AuthService::new(
         user_repo.clone(),
         user_session_repo.clone(),
+        role_repo.clone(),
         cache,
         Duration::seconds(config.session_ttl_secs),
         Duration::seconds(config.session_cache_ttl_secs),

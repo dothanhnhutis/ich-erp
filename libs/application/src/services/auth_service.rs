@@ -7,7 +7,7 @@ use domain::{
         session::{NewSession, Session},
         user::{User, UserStatus},
     },
-    repositories::{UserRepository, UserSessionRepository},
+    repositories::{RoleRepository, UserRepository, UserSessionRepository},
 };
 
 use crate::{
@@ -16,29 +16,33 @@ use crate::{
     security::session_token::{SessionToken, hash_token},
 };
 
-pub struct AuthService<UR, USR, C>
+pub struct AuthService<UR, USR, RR, C>
 where
     UR: UserRepository,
     USR: UserSessionRepository,
+    RR: RoleRepository,
     C: SessionCache,
 {
     user_repo: UR,
     user_session_repo: USR,
+    role_repo: RR,
     cache: C,
     session_ttl: Duration,
     cache_ttl: Duration,
     db_sync_interval: Duration,
 }
 
-impl<UR, USR, C> AuthService<UR, USR, C>
+impl<UR, USR, RR, C> AuthService<UR, USR, RR, C>
 where
     UR: UserRepository,
     USR: UserSessionRepository,
+    RR: RoleRepository,
     C: SessionCache,
 {
     pub fn new(
         user_repo: UR,
         user_session_repo: USR,
+        role_repo: RR,
         cache: C,
         session_ttl: Duration,
         cache_ttl: Duration,
@@ -47,6 +51,7 @@ where
         Self {
             user_repo,
             user_session_repo,
+            role_repo,
             cache,
             session_ttl,
             cache_ttl,
@@ -116,7 +121,10 @@ where
 
     // Xác thực một token thô (từ Bearer/cookie) → trả phiên + user.
     // Cache-first (fail-open), sliding 30 ngày, ghi DB throttle theo `db_sync_interval`.
-    pub async fn authenticate(&self, raw_token: &str) -> Result<(Session, User), AppError> {
+    pub async fn authenticate(
+        &self,
+        raw_token: &str,
+    ) -> Result<(Session, User, Vec<String>), AppError> {
         let token_hash = hash_token(raw_token);
         let now = chrono::Utc::now();
 
@@ -147,6 +155,11 @@ where
                 (s, u, synced)
             }
         };
+
+        let permission_codes = self
+            .role_repo
+            .find_permission_codes_for_user(user.id)
+            .await?;
 
         // 2. Kiểm tra hợp lệ — nếu fail thì dọn cache (fail-open) rồi trả lỗi.
         if session.revoked_at.is_some() {
@@ -194,6 +207,6 @@ where
             tracing::warn!("cache put lỗi: {e}");
         }
 
-        Ok((session, user))
+        Ok((session, user, permission_codes))
     }
 }

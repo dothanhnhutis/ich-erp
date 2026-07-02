@@ -2,9 +2,19 @@ use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
 use application::errors::AppError;
+use domain::entities::session::Session;
+use domain::entities::user::User;
 
 use crate::error::ApiError;
-use crate::middleware::auth::AuthContext;
+/// Ngữ cảnh xác thực, được middleware nhét vào request extensions
+/// để các handler protected đọc lại qua `Extension<AuthContext>`.
+
+#[derive(Clone, Debug)]
+pub struct AuthContext {
+    pub user: User,
+    pub session: Session,
+    pub permission_codes: Vec<String>,
+}
 
 impl<S> FromRequestParts<S> for AuthContext
 where

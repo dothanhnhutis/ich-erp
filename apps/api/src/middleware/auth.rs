@@ -5,19 +5,10 @@ use axum::response::Response;
 use axum_extra::extract::cookie::CookieJar;
 
 use application::errors::AppError;
-use domain::entities::session::Session;
-use domain::entities::user::User;
 
 use crate::AppState;
 use crate::error::ApiError;
-
-/// Ngữ cảnh xác thực, được middleware nhét vào request extensions
-/// để các handler protected đọc lại qua `Extension<AuthContext>`.
-#[derive(Clone, Debug)]
-pub struct AuthContext {
-    pub user: User,
-    pub session: Session,
-}
+use crate::extractors::authenticated_user::AuthContext;
 
 /// Middleware bắt buộc đăng nhập: lấy token từ Bearer/cookie, xác thực, gắn AuthContext.
 pub async fn require_auth(
@@ -29,9 +20,14 @@ pub async fn require_auth(
     let token = extract_token(req.headers(), &jar)
         .ok_or_else(|| AppError::Unauthorized("Thiếu thông tin xác thực".into()))?;
 
-    let (session, user) = state.auth_service.authenticate(&token).await?;
+    let (session, user, permission_codes) = state.auth_service.authenticate(&token).await?;
 
-    req.extensions_mut().insert(AuthContext { session, user });
+    req.extensions_mut().insert(AuthContext {
+        session,
+        user,
+        permission_codes,
+    });
+
     Ok(next.run(req).await)
 }
 

@@ -22,9 +22,9 @@ pub enum AppError {
 impl From<DomainError> for AppError {
     fn from(e: DomainError) -> Self {
         match e {
-            DomainError::InvalidEmail(m) | DomainError::InvalidUserStatus(m) => {
-                AppError::Validation(m)
-            }
+            DomainError::InvalidEmail(m)
+            | DomainError::InvalidUserStatus(m)
+            | DomainError::InvalidRoleStatus(m) => AppError::Validation(m),
             DomainError::Conflict(m) => AppError::Conflict(m),
         }
     }
