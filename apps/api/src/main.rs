@@ -36,6 +36,12 @@ async fn main() {
         .await
         .expect("không kết nối được database");
 
+    let redis_conn = init_redis(&config.redis_url)
+        .await
+        .expect("Failed to connect to Redis");
+
+    let cache = RedisSessionCache::new(redis_conn);
+
     let user_repo = PgUserRepository::new(pool.clone());
     let user_session_repo = PgUserSessionRepository::new(pool.clone());
 

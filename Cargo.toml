@@ -50,7 +50,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 
 # 5. Cache
-redis = { version = "1.0.4", features = ["tokio-comp", "connection-manager"] }
+redis = { version = "1.3.0", features = ["tokio-comp", "connection-manager"] }
 moka = { version = "0.12.15", features = ["future"] }
 
 # 6. Security (JWT & Password Hashing)

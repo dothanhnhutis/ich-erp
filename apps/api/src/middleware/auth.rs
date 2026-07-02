@@ -30,8 +30,7 @@ pub async fn require_auth(
     let token = extract_token(req.headers(), &jar)
         .ok_or_else(|| AppError::Unauthorized("Thiếu thông tin xác thực".into()))?;
 
-    println!("token: {token:#?}");
-    // let (session, user) = state.auth_service.authenticate(&token).await?;
+    let (session, user) = state.auth_service.authenticate(&token).await?;
 
     req.extensions_mut().insert(AuthContext {
         username: "sss".to_string(),

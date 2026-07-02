@@ -5,7 +5,6 @@ use domain::{
 };
 use sqlx::{
     AssertSqlSafe, PgPool,
-    error::ErrorKind,
     types::chrono::{DateTime, Utc},
 };
 use std::str::FromStr;
@@ -58,24 +57,6 @@ impl PgUserRepository {
         Self { pool }
     }
 }
-// pub fn map_sqlx_error(err: sqlx::Error) -> RepositoryError {
-//     if let Some(db) = err.as_database_error() {
-//         match db.kind() {
-//             ErrorKind::UniqueViolation => {
-//                 return RepositoryError::UniqueViolation(
-//                     db.constraint().unwrap_or_default().to_owned(),
-//                 );
-//             }
-//             ErrorKind::ForeignKeyViolation => {
-//                 return RepositoryError::ForeignKeyViolation(
-//                     db.constraint().unwrap_or_default().to_owned(),
-//                 );
-//             }
-//             _ => {}
-//         }
-//     }
-//     RepositoryError::Unexpected(Box::new(err)) // (2) box lại, sqlx ở lại infra
-// }
 
 impl UserRepository for PgUserRepository {
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, RepositoryError> {

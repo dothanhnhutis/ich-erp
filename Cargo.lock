@@ -1067,6 +1067,7 @@ version = "0.1.0"
 dependencies = [
  "domain",
  "redis",
+ "serde_json",
  "sqlx",
  "uuid",
 ]
