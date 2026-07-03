@@ -1,7 +1,5 @@
 use std::env;
 
-use std::env;
-
 /// Cấu hình ứng dụng — load từ environment variables
 pub struct AppConfig {
     pub database_url: String,
@@ -53,6 +51,12 @@ impl AppConfig {
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(false),
             cookie_domain: env::var("COOKIE_DOMAIN").ok(),
+            cors_allowed_origins: env::var("CORS_ALLOWED_ORIGINS")
+                .unwrap_or_default()
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect(),
             session_cache_ttl_secs: env::var("SESSION_CACHE_TTL_SECS")
                 .unwrap_or_else(|_| "3600".into())
                 .parse()
@@ -71,6 +75,11 @@ impl AppConfig {
                 .parse()
                 .map_err(|_| "RESET_PASSWORD_TOKEN_TTL_SECS must be an integer (seconds)")?,
             app_web_url: env::var("APP_WEB_URL").unwrap_or_else(|_| "http://localhost:5173".into()),
+
+            rabbitmq_url: env::var("RABBITMQ_URL")
+                .unwrap_or_else(|_| "amqp://guest:guest@127.0.0.1:5672/%2f".into()),
+            rabbitmq_email_queue: env::var("RABBITMQ_EMAIL_QUEUE")
+                .unwrap_or_else(|_| "email_jobs".into()),
         })
     }
 }

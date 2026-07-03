@@ -4,10 +4,7 @@ mod handlers;
 mod middlewares;
 mod routes;
 use crate::routes::create_routes;
-use application::services::{
-    auth_service::AuthService,
-    user_service::{self, UserService},
-};
+use application::services::{auth_service::AuthService, user_service::UserService};
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
 use dotenvy::dotenv;
