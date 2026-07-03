@@ -80,4 +80,39 @@ impl UserRepository for PgUserRepository {
 
         Ok(row.map(User::try_from).transpose()?)
     }
+
+    async fn create_with_roles(
+        &self,
+        new_user: domain::entities::user::NewUser,
+        role_ids: &[uuid::Uuid],
+    ) -> Result<User, RepositoryError> {
+        let mut tx = self.pool.begin().await.map_err(map_sqlx_error)?;
+
+        // Tạo user — status mặc định PENDING_PASSWORD, id do DB sinh.
+        let row: UserRow = sqlx::query_as(
+            r#"
+            INSERT INTO users (email)
+            VALUES ($1)
+            RETURNING id, email, password_hash, username, status,
+                      deactivated_at, created_at, updated_at
+            "#,
+        )
+        .bind(&new_user.email)
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?; // unique_violation → "Email đã tồn tại"
+
+        // Gán role — FK RESTRICT đảm bảo role tồn tại (fk_violation → "Role không tồn tại").
+        for role_id in role_ids {
+            sqlx::query(r#"INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)"#)
+                .bind(row.id)
+                .bind(role_id)
+                .execute(&mut *tx)
+                .await
+                .map_err(map_sqlx_error)?;
+        }
+
+        tx.commit().await.map_err(map_sqlx_error)?;
+        Ok(User::try_from(row)?)
+    }
 }

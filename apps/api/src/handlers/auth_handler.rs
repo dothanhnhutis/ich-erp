@@ -8,8 +8,13 @@ use axum::{
     response::IntoResponse,
 };
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
+use serde_json::json;
 
-use crate::{AppState, error::ApiError, extractors::validator::ValidatedBodyJson};
+use crate::{
+    AppState,
+    error::ApiError,
+    extractors::{auth_context::AuthContext, validator::ValidatedBodyJson},
+};
 
 pub async fn login_handler(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
@@ -82,4 +87,27 @@ fn user_agent(headers: &HeaderMap) -> Option<String> {
         .get(axum::http::header::USER_AGENT)
         .and_then(|v| v.to_str().ok())
         .map(|s| s.to_string())
+}
+
+/// Đăng xuất phiên hiện tại + xóa cookie.
+pub async fn logout(
+    State(state): State<AppState>,
+    data: AuthContext,
+    jar: CookieJar,
+) -> Result<impl IntoResponse, ApiError> {
+    state
+        .auth_service
+        .logout(data.session.id, &data.session.token_hash)
+        .await?;
+
+    let removal = session_cookie(
+        String::new(),
+        state.config.cookie_secure,
+        state.config.cookie_domain.as_deref(),
+        None,
+    );
+    Ok((
+        jar.remove(removal),
+        Json(json!({ "message": "Đã đăng xuất" })),
+    ))
 }

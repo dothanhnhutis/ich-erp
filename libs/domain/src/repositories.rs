@@ -2,8 +2,9 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     entities::{
+        password_token::{NewPasswordToken, PasswordToken, PasswordTokenType},
         session::{NewSession, Session},
-        user::User,
+        user::{NewUser, User},
     },
     errors::DomainError,
 };
@@ -36,6 +37,12 @@ pub trait UserRepository: Send + Sync {
         &self,
         id: uuid::Uuid,
     ) -> impl Future<Output = Result<Option<User>, RepositoryError>> + Send;
+
+    fn create_with_roles(
+        &self,
+        new_user: NewUser,
+        role_ids: &[uuid::Uuid],
+    ) -> impl Future<Output = Result<User, RepositoryError>> + Send;
 }
 
 pub trait UserSessionRepository: Send + Sync {
@@ -54,6 +61,12 @@ pub trait UserSessionRepository: Send + Sync {
         id: uuid::Uuid,
         expires_at: DateTime<Utc>,
     ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
+
+    fn revoke(
+        &self,
+        id: uuid::Uuid,
+        reason: &str,
+    ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }
 
 pub trait RoleRepository: Send + Sync {
@@ -63,4 +76,24 @@ pub trait RoleRepository: Send + Sync {
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<String>, RepositoryError>> + Send;
+}
+
+pub trait PasswordTokenRepository: Send + Sync {
+    fn create(
+        &self,
+        token: NewPasswordToken,
+    ) -> impl Future<Output = Result<PasswordToken, RepositoryError>> + Send;
+
+    /// Token còn hiệu lực theo hash: chưa dùng (used_at IS NULL) và chưa hết hạn.
+    fn find_active_by_hash(
+        &self,
+        token_hash: &str,
+    ) -> impl Future<Output = Result<Option<PasswordToken>, RepositoryError>> + Send;
+
+    /// Vô hiệu mọi token còn hiệu lực của user theo loại (đặt used_at = NOW()).
+    fn invalidate_active(
+        &self,
+        user_id: uuid::Uuid,
+        token_type: PasswordTokenType,
+    ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }

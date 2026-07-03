@@ -1,10 +1,13 @@
 mod error;
 mod extractors;
-mod handler;
-mod middleware;
+mod handlers;
+mod middlewares;
 mod routes;
 use crate::routes::create_routes;
-use application::services::auth_service::AuthService;
+use application::services::{
+    auth_service::AuthService,
+    user_service::{self, UserService},
+};
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
 use dotenvy::dotenv;
@@ -12,6 +15,7 @@ use infrastructure::{
     cache::{init_redis, session::RedisSessionCache},
     postgres::pool::init_db_pool,
     repositories::{
+        pg_password_token_repository::PgPasswordTokenRepository,
         pg_role_repositories::PgRoleRepository, pg_user_repositories::PgUserRepository,
         pg_user_session_repositories::PgUserSessionRepository,
     },
@@ -24,6 +28,7 @@ struct AppState {
     auth_service: Arc<
         AuthService<PgUserRepository, PgUserSessionRepository, PgRoleRepository, RedisSessionCache>,
     >,
+    user_service: Arc<UserService<PgUserRepository, PgRoleRepository, PgPasswordTokenRepository>>,
     config: Arc<AppConfig>,
 }
 
@@ -48,6 +53,7 @@ async fn main() {
     let user_repo = PgUserRepository::new(pool.clone());
     let user_session_repo = PgUserSessionRepository::new(pool.clone());
     let role_repo = PgRoleRepository::new(pool.clone());
+    let password_token_repo = PgPasswordTokenRepository::new(pool.clone());
 
     let auth_service = Arc::new(AuthService::new(
         user_repo.clone(),
@@ -58,8 +64,19 @@ async fn main() {
         Duration::seconds(config.session_cache_ttl_secs),
         Duration::seconds(config.session_db_sync_secs),
     ));
+
+    let user_service = Arc::new(UserService::new(
+        user_repo.clone(),
+        role_repo.clone(),
+        password_token_repo.clone(),
+        email_publisher.clone(),
+        config.app_web_url.clone(),
+        config.password_token_ttl_secs,
+    ));
+
     let state = AppState {
         auth_service,
+        user_service,
         config: Arc::new(config),
     };
 

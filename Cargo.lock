@@ -87,8 +87,10 @@ dependencies = [
  "rand",
  "serde",
  "sha2 0.11.0",
+ "shared",
  "thiserror 2.0.18",
  "tracing",
+ "uuid",
  "validator",
 ]
 
@@ -3797,6 +3799,9 @@ dependencies = [
 [[package]]
 name = "shared"
 version = "0.1.0"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "shlex"

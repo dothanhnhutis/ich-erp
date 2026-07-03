@@ -1,2 +1,2 @@
-pub mod authenticated_user;
+pub mod auth_context;
 pub mod validator;

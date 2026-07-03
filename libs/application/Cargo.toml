@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 domain = { path = "../domain" }
+shared = { path = "../shared" }
 
 thiserror.workspace = true
 validator.workspace = true
@@ -15,3 +16,4 @@ sha2.workspace = true
 chrono.workspace = true
 hex.workspace = true
 tracing.workspace = true
+uuid.workspace = true

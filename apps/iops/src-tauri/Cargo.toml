@@ -22,12 +22,3 @@ tauri.workspace = true
 tauri-plugin-opener.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-
-
-# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
-[profile.release]
-codegen-units = 1
-lto = true
-opt-level = 3
-panic = "abort"
-strip = true

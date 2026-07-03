@@ -84,6 +84,12 @@ const TOUCH_EXPIRES: &str = r#"
     WHERE id = $1 AND revoked_at IS NULL
 "#;
 
+const REVOKE_SESSION: &str = r#"
+    UPDATE user_sessions
+    SET revoked_at = NOW(), revoke_reason = $2, updated_at = NOW()
+    WHERE id = $1 AND revoked_at IS NULL
+"#;
+
 #[derive(Clone)]
 pub struct PgUserSessionRepository {
     pool: PgPool,
@@ -136,6 +142,17 @@ impl UserSessionRepository for PgUserSessionRepository {
         sqlx::query(TOUCH_EXPIRES)
             .bind(id)
             .bind(expires_at)
+            .execute(&self.pool)
+            .await
+            .map_err(map_sqlx_error)?;
+
+        Ok(())
+    }
+
+    async fn revoke(&self, id: uuid::Uuid, reason: &str) -> Result<(), RepositoryError> {
+        sqlx::query(REVOKE_SESSION)
+            .bind(id)
+            .bind(reason)
             .execute(&self.pool)
             .await
             .map_err(map_sqlx_error)?;

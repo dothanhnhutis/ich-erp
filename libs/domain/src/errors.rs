@@ -9,6 +9,9 @@ pub enum DomainError {
     #[error("Trạng thái role không hợp lệ: {0}")]
     InvalidRoleStatus(String),
 
+    #[error("Password token không hợp lệ: {0}")]
+    InvalidPasswordTokenType(String),
+
     #[error("{0}")]
     Conflict(String),
 }

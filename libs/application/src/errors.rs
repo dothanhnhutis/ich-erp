@@ -12,6 +12,9 @@ pub enum AppError {
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
 
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
     #[error("Conflict error: {0}")]
     Conflict(String),
 
@@ -24,7 +27,8 @@ impl From<DomainError> for AppError {
         match e {
             DomainError::InvalidEmail(m)
             | DomainError::InvalidUserStatus(m)
-            | DomainError::InvalidRoleStatus(m) => AppError::Validation(m),
+            | DomainError::InvalidRoleStatus(m)
+            | DomainError::InvalidPasswordTokenType(m) => AppError::Validation(m),
             DomainError::Conflict(m) => AppError::Conflict(m),
         }
     }

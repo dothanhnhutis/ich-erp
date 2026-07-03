@@ -8,7 +8,7 @@ use application::errors::AppError;
 
 use crate::AppState;
 use crate::error::ApiError;
-use crate::extractors::authenticated_user::AuthContext;
+use crate::extractors::auth_context::AuthContext;
 
 /// Middleware bắt buộc đăng nhập: lấy token từ Bearer/cookie, xác thực, gắn AuthContext.
 pub async fn require_auth(

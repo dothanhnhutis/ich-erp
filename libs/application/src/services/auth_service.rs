@@ -1,7 +1,7 @@
 use argon2::{self, PasswordVerifier};
 use chrono::Duration;
 use domain::{
-    cache::{self, SessionCache},
+    cache::SessionCache,
     entities::{
         cached_session::CachedSession,
         session::{NewSession, Session},
@@ -208,5 +208,11 @@ where
         }
 
         Ok((session, user, permission_codes))
+    }
+
+    pub async fn logout(&self, session_id: uuid::Uuid, token_hash: &str) -> Result<(), AppError> {
+        self.user_session_repo.revoke(session_id, "LOGOUT").await?;
+        let _ = self.cache.remove(token_hash).await;
+        Ok(())
     }
 }
