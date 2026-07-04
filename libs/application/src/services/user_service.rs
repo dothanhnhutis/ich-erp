@@ -37,7 +37,7 @@ where
     PTR: PasswordTokenRepository,
     EP: EmailPublisher,
 {
-    fn new(
+    pub fn new(
         user_repo: UR,
         role_repo: RR,
         password_token_repo: PTR,

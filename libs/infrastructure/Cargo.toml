@@ -6,8 +6,13 @@ edition = "2024"
 
 [dependencies]
 domain = { path = "../domain" }
+shared = { path = "../shared" }
+application = { path = "../application" }
 
 sqlx.workspace = true
 uuid.workspace = true
 redis.workspace = true
 serde_json.workspace = true
+lapin.workspace = true
+tokio.workspace = true
+deadpool.workspace = true

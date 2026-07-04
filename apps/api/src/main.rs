@@ -10,6 +10,10 @@ use chrono::Duration;
 use dotenvy::dotenv;
 use infrastructure::{
     cache::{init_redis, session::RedisSessionCache},
+    messaging::{
+        email_publisher::LapinEmailPublisher,
+        lapin_pool::{build_channel_pool, declare_email_topology},
+    },
     postgres::pool::init_db_pool,
     repositories::{
         pg_password_token_repository::PgPasswordTokenRepository,
@@ -17,7 +21,10 @@ use infrastructure::{
         pg_user_session_repositories::PgUserSessionRepository,
     },
 };
-use shared::config::AppConfig;
+use shared::{
+    config::AppConfig,
+    messaging::{EMAIL_EXCHANGE, EMAIL_ROUTING_KEY},
+};
 use std::{net::SocketAddr, sync::Arc};
 
 #[derive(Clone, FromRef)]
@@ -25,7 +32,14 @@ struct AppState {
     auth_service: Arc<
         AuthService<PgUserRepository, PgUserSessionRepository, PgRoleRepository, RedisSessionCache>,
     >,
-    user_service: Arc<UserService<PgUserRepository, PgRoleRepository, PgPasswordTokenRepository>>,
+    user_service: Arc<
+        UserService<
+            PgUserRepository,
+            PgRoleRepository,
+            PgPasswordTokenRepository,
+            LapinEmailPublisher,
+        >,
+    >,
     config: Arc<AppConfig>,
 }
 
@@ -51,6 +65,14 @@ async fn main() {
     let user_session_repo = PgUserSessionRepository::new(pool.clone());
     let role_repo = PgRoleRepository::new(pool.clone());
     let password_token_repo = PgPasswordTokenRepository::new(pool.clone());
+
+    let ch_pool = build_channel_pool(&config.rabbitmq_url, 8);
+    // Declare exchange idempotent ngay lúc khởi động → publish không phụ thuộc thứ tự chạy worker.
+    declare_email_topology(&ch_pool)
+        .await
+        .expect("không declare được email exchange");
+    let email_publisher =
+        LapinEmailPublisher::new(ch_pool.clone(), EMAIL_EXCHANGE, EMAIL_ROUTING_KEY);
 
     let auth_service = Arc::new(AuthService::new(
         user_repo.clone(),

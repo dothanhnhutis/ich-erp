@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
 
+/// Tên exchange nhận email job. api publish vào đây, worker bind queue vào đây.
+pub const EMAIL_EXCHANGE: &str = "email.exchange";
+/// Routing key cho email job (exchange kiểu direct).
+pub const EMAIL_ROUTING_KEY: &str = "email.send";
+
 /// Hợp đồng message gửi qua RabbitMQ giữa `api` (publish) và `worker` (consume).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]

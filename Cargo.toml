@@ -5,10 +5,10 @@ members = [
     "libs/infrastructure",
     "libs/shared",
     "libs/domain",
-    "apps/iops/src-tauri"
+    "apps/iops/src-tauri",
+    "apps/worker",
 ]
 resolver = "3"
-
 
 
 [workspace.dependencies]
@@ -60,6 +60,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 # 5. Cache
 redis = { version = "1.3.0", features = ["tokio-comp", "connection-manager"] }
 moka = { version = "0.12.15", features = ["future"] }
+deadpool = "0.12"
 
 # 6. Security (JWT & Password Hashing)
 jsonwebtoken = "10.4.0"
