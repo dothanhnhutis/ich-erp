@@ -1,9 +1,12 @@
-use std::net::{IpAddr, SocketAddr};
+use std::{
+    collections::HashMap,
+    net::{IpAddr, SocketAddr},
+};
 
-use application::dto::auth_dto::{ClientContext, LoginRequest};
+use application::dto::auth_dto::{ClientContext, LoginRequest, SetupAccountRequest};
 use axum::{
     Json,
-    extract::{ConnectInfo, State},
+    extract::{ConnectInfo, Query, State},
     http::HeaderMap,
     response::IntoResponse,
 };
@@ -110,4 +113,13 @@ pub async fn logout(
         jar.remove(removal),
         Json(json!({ "message": "Đã đăng xuất" })),
     ))
+}
+// Đặt mật khẩu từ token INIT trong email (public — token tự xác thực).
+// Thiết lập tài khoản (token INIT): nhập username + mật khẩu khi admin tạo tài khoản.
+pub async fn setup_account(
+    State(state): State<AppState>,
+    ValidatedBodyJson(payload): ValidatedBodyJson<SetupAccountRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    state.account_service.setup_account(payload).await?;
+    Ok(Json(json!({ "message": "Thiết lập tài khoản thành công" })))
 }

@@ -10,6 +10,8 @@ tokio.workspace = true
 lapin.workspace = true
 futures-lite.workspace = true
 lettre.workspace = true
+reqwest = { workspace = true, features = ["form"] }
+serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tracing.workspace = true

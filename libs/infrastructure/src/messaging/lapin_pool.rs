@@ -23,10 +23,10 @@ impl ChannelManager {
 
     async fn connection(&self) -> Result<Arc<Connection>, lapin::Error> {
         let mut guard = self.conn.lock().await;
-        if let Some(c) = guard.as_ref() {
-            if c.status().connected() {
-                return Ok(c.clone()); // clone Arc, rẻ
-            }
+        if let Some(c) = guard.as_ref()
+            && c.status().connected()
+        {
+            return Ok(c.clone()); // clone Arc, rẻ
         }
         // connection chưa có / đã chết → dựng lại (chỗ "reconnect")
         let c = Arc::new(Connection::connect(&self.uri, ConnectionProperties::default()).await?);

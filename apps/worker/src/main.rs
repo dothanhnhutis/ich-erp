@@ -1,6 +1,7 @@
 mod config;
 mod consumer;
 mod email;
+mod gmail_oauth;
 
 use std::time::Duration;
 

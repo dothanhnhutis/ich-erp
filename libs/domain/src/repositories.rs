@@ -43,6 +43,14 @@ pub trait UserRepository: Send + Sync {
         new_user: NewUser,
         role_ids: &[uuid::Uuid],
     ) -> impl Future<Output = Result<User, RepositoryError>> + Send;
+
+    fn activate_account(
+        &self,
+        user_id: uuid::Uuid,
+        username: &str,
+        password_hash: &str,
+        token_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }
 
 pub trait UserSessionRepository: Send + Sync {

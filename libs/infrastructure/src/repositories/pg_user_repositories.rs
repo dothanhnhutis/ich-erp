@@ -115,4 +115,54 @@ impl UserRepository for PgUserRepository {
         tx.commit().await.map_err(map_sqlx_error)?;
         Ok(User::try_from(row)?)
     }
+
+    async fn activate_account(
+        &self,
+        user_id: uuid::Uuid,
+        username: &str,
+        password_hash: &str,
+        token_id: uuid::Uuid,
+    ) -> Result<(), RepositoryError> {
+        let mut tx = self.pool.begin().await.map_err(map_sqlx_error)?;
+
+        sqlx::query(
+            r#"
+            UPDATE users
+            SET username = $2, password_hash = $3, status = 'ACTIVE', password_changed_at = NOW()
+            WHERE id = $1
+            "#,
+        )
+        .bind(user_id)
+        .bind(username)
+        .bind(password_hash)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        mark_token_used(&mut tx, token_id).await?;
+
+        tx.commit().await.map_err(map_sqlx_error)?;
+        Ok(())
+    }
+}
+
+// Đánh dấu password token đã dùng; rows_affected != 1 nghĩa là token đã bị dùng (race) → lỗi → rollback.
+async fn mark_token_used(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    token_id: Uuid,
+) -> Result<(), RepositoryError> {
+    let used = sqlx::query(
+        r#"UPDATE password_tokens SET used_at = NOW() WHERE id = $1 AND used_at IS NULL"#,
+    )
+    .bind(token_id)
+    .execute(&mut **tx)
+    .await
+    .map_err(map_sqlx_error)?;
+
+    if used.rows_affected() != 1 {
+        return Err(RepositoryError::Mapping(DomainError::RevokedPasswordToken(
+            "Liên kết đã được sử dụng".into(),
+        )));
+    }
+    Ok(())
 }

@@ -28,7 +28,8 @@ impl From<DomainError> for AppError {
             DomainError::InvalidEmail(m)
             | DomainError::InvalidUserStatus(m)
             | DomainError::InvalidRoleStatus(m)
-            | DomainError::InvalidPasswordTokenType(m) => AppError::Validation(m),
+            | DomainError::InvalidPasswordTokenType(m)
+            | DomainError::RevokedPasswordToken(m) => AppError::Validation(m),
             DomainError::Conflict(m) => AppError::Conflict(m),
         }
     }

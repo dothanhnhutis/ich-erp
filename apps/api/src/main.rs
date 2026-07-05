@@ -4,7 +4,11 @@ mod handlers;
 mod middlewares;
 mod routes;
 use crate::routes::create_routes;
-use application::services::{auth_service::AuthService, user_service::UserService};
+use application::services::{
+    account_service::{self, AccountService},
+    auth_service::AuthService,
+    user_service::UserService,
+};
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
 use dotenvy::dotenv;
@@ -40,6 +44,8 @@ struct AppState {
             LapinEmailPublisher,
         >,
     >,
+    account_service:
+        Arc<AccountService<PgUserRepository, PgPasswordTokenRepository, LapinEmailPublisher>>,
     config: Arc<AppConfig>,
 }
 
@@ -93,9 +99,18 @@ async fn main() {
         config.password_token_ttl_secs,
     ));
 
+    let account_service = Arc::new(AccountService::new(
+        user_repo,
+        password_token_repo,
+        email_publisher,
+        config.app_web_url.clone(),
+        config.reset_password_token_ttl_secs,
+    ));
+
     let state = AppState {
         auth_service,
         user_service,
+        account_service,
         config: Arc::new(config),
     };
 
