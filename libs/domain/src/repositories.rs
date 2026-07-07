@@ -51,6 +51,15 @@ pub trait UserRepository: Send + Sync {
         password_hash: &str,
         token_id: uuid::Uuid,
     ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
+
+    /// RESET: đặt mật khẩu mới (+ password_changed_at) + đánh dấu token đã dùng, atomic.
+    /// Không đụng status/username (user đã ACTIVE).
+    fn reset_password(
+        &self,
+        user_id: uuid::Uuid,
+        password_hash: &str,
+        token_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }
 
 pub trait UserSessionRepository: Send + Sync {

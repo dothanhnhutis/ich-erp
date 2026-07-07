@@ -14,7 +14,7 @@ impl PasswordTokenType {
     pub fn as_str(&self) -> &'static str {
         match self {
             PasswordTokenType::Init => "INIT",
-            PasswordTokenType::ResetPassword => "RESET-PASSWORD",
+            PasswordTokenType::ResetPassword => "RESET_PASSWORD",
         }
     }
 }
@@ -24,7 +24,7 @@ impl std::str::FromStr for PasswordTokenType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "INIT" => Ok(PasswordTokenType::Init),
-            "RESET-PASSWORD" => Ok(PasswordTokenType::ResetPassword),
+            "RESET_PASSWORD" => Ok(PasswordTokenType::ResetPassword),
             other => Err(DomainError::InvalidPasswordTokenType(other.to_owned())),
         }
     }

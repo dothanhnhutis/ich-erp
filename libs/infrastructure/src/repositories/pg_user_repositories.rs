@@ -144,6 +144,33 @@ impl UserRepository for PgUserRepository {
         tx.commit().await.map_err(map_sqlx_error)?;
         Ok(())
     }
+
+    async fn reset_password(
+        &self,
+        user_id: Uuid,
+        password_hash: &str,
+        token_id: Uuid,
+    ) -> Result<(), RepositoryError> {
+        let mut tx = self.pool.begin().await.map_err(map_sqlx_error)?;
+
+        sqlx::query(
+            r#"
+            UPDATE users
+            SET password_hash = $2, password_changed_at = NOW()
+            WHERE id = $1
+            "#,
+        )
+        .bind(user_id)
+        .bind(password_hash)
+        .execute(&mut *tx)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        mark_token_used(&mut tx, token_id).await?;
+
+        tx.commit().await.map_err(map_sqlx_error)?;
+        Ok(())
+    }
 }
 
 // Đánh dấu password token đã dùng; rows_affected != 1 nghĩa là token đã bị dùng (race) → lỗi → rollback.

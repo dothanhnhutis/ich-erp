@@ -3,7 +3,9 @@ use std::{
     net::{IpAddr, SocketAddr},
 };
 
-use application::dto::auth_dto::{ClientContext, LoginRequest, SetupAccountRequest};
+use application::dto::auth_dto::{
+    ClientContext, ForgotPasswordRequest, LoginRequest, SetPasswordRequest, SetupAccountRequest,
+};
 use axum::{
     Json,
     extract::{ConnectInfo, Query, State},
@@ -122,4 +124,24 @@ pub async fn setup_account(
 ) -> Result<impl IntoResponse, ApiError> {
     state.account_service.setup_account(payload).await?;
     Ok(Json(json!({ "message": "Thiết lập tài khoản thành công" })))
+}
+
+// Quên mật khẩu: nhập email để nhận link đặt lại. Luôn trả 200 chung chung (không lộ email).
+pub async fn forgot_password(
+    State(state): State<AppState>,
+    ValidatedBodyJson(payload): ValidatedBodyJson<ForgotPasswordRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    state.account_service.forgot_password(payload).await?;
+    Ok(Json(json!({
+        "message": "Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi"
+    })))
+}
+
+// Đặt lại mật khẩu (token RESET-PASSWORD) từ link mail quên mật khẩu.
+pub async fn reset_password(
+    State(state): State<AppState>,
+    ValidatedBodyJson(payload): ValidatedBodyJson<SetPasswordRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    state.account_service.reset_password(payload).await?;
+    Ok(Json(json!({ "message": "Đặt lại mật khẩu thành công" })))
 }

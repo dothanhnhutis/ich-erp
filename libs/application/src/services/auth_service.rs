@@ -1,17 +1,19 @@
 use argon2::{self, PasswordVerifier};
-use chrono::Duration;
+use chrono::{Duration, Utc};
 use domain::{
     cache::SessionCache,
     entities::{
         cached_session::CachedSession,
+        password_token::{NewPasswordToken, PasswordTokenType},
         session::{NewSession, Session},
         user::{User, UserStatus},
     },
     repositories::{RoleRepository, UserRepository, UserSessionRepository},
 };
+use shared::messaging::{EmailJob, ResetPasswordEmail};
 
 use crate::{
-    dto::auth_dto::{ClientContext, LoginRequest, LoginResponse},
+    dto::auth_dto::{ClientContext, ForgotPasswordRequest, LoginRequest, LoginResponse},
     errors::AppError,
     security::session_token::{SessionToken, hash_token},
 };

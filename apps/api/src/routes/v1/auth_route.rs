@@ -10,6 +10,8 @@ where
     Router::new()
         .route("/login", post(auth_handler::login_handler))
         .route("/setup-account", post(auth_handler::setup_account))
+        .route("/forgot-password", post(auth_handler::forgot_password))
+        .route("/set-password", post(auth_handler::reset_password))
 }
 
 pub fn private_routes<S>() -> Router<S>
