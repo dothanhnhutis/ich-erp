@@ -217,4 +217,13 @@ where
         let _ = self.cache.remove(token_hash).await;
         Ok(())
     }
+
+    // Đăng xuất tất cả thiết bị của user (revoke DB + xóa cache toàn bộ phiên user).
+    pub async fn logout_all(&self, user_id: uuid::Uuid) -> Result<(), AppError> {
+        self.user_session_repo
+            .revoke_all_for_user(user_id, "FORCED")
+            .await?;
+        let _ = self.cache.remove_all_for_user(user_id).await;
+        Ok(())
+    }
 }

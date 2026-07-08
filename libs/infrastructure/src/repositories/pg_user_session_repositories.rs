@@ -90,6 +90,12 @@ const REVOKE_SESSION: &str = r#"
     WHERE id = $1 AND revoked_at IS NULL
 "#;
 
+const REVOKE_ALL_FOR_USER: &str = r#"
+    UPDATE user_sessions
+    SET revoked_at = NOW(), revoke_reason = $2, updated_at = NOW()
+    WHERE user_id = $1 AND revoked_at IS NULL
+"#;
+
 #[derive(Clone)]
 pub struct PgUserSessionRepository {
     pool: PgPool,
@@ -152,6 +158,21 @@ impl UserSessionRepository for PgUserSessionRepository {
     async fn revoke(&self, id: uuid::Uuid, reason: &str) -> Result<(), RepositoryError> {
         sqlx::query(REVOKE_SESSION)
             .bind(id)
+            .bind(reason)
+            .execute(&self.pool)
+            .await
+            .map_err(map_sqlx_error)?;
+
+        Ok(())
+    }
+
+    async fn revoke_all_for_user(
+        &self,
+        user_id: uuid::Uuid,
+        reason: &str,
+    ) -> Result<(), RepositoryError> {
+        sqlx::query(REVOKE_ALL_FOR_USER)
+            .bind(user_id)
             .bind(reason)
             .execute(&self.pool)
             .await

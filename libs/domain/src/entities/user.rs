@@ -48,8 +48,15 @@ pub struct User {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Dữ liệu để admin tạo user mới (chỉ email; status mặc định PENDING_PASSWORD ở DB).
+// Dữ liệu để admin tạo user mới (chỉ email; status mặc định PENDING_PASSWORD ở DB).
 #[derive(Debug, Clone)]
 pub struct NewUser {
     pub email: String,
+}
+
+// Thay đổi cho cập nhật user — chỉ field `Some` mới được ghi.
+#[derive(Debug, Clone, Default)]
+pub struct UserUpdate {
+    pub username: Option<String>,
+    pub status: Option<UserStatus>,
 }

@@ -5,9 +5,7 @@ mod middlewares;
 mod routes;
 use crate::routes::create_routes;
 use application::services::{
-    account_service::{self, AccountService},
-    auth_service::AuthService,
-    user_service::UserService,
+    account_service::AccountService, auth_service::AuthService, user_service::UserService,
 };
 use axum::{Router, extract::FromRef};
 use chrono::Duration;

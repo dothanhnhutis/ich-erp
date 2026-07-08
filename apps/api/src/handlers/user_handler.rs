@@ -1,8 +1,15 @@
 use application::{
-    dto::user_dto::{CreateUserRequest, UserResponse},
+    dto::user_dto::{CreateUserRequest, UpdateUserRequest, UserResponse},
     errors::AppError,
 };
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+    response::IntoResponse,
+};
+use serde_json::json;
+use sqlx::types::uuid;
 
 use crate::{
     AppState,
@@ -10,12 +17,12 @@ use crate::{
     extractors::{auth_context::AuthContext, validator::ValidatedBodyJson},
 };
 
-/// Trả về thông tin user đang đăng nhập (AuthContext do middleware require_auth gắn).
+// Trả về thông tin user đang đăng nhập (AuthContext do middleware require_auth gắn).
 pub async fn me(data: AuthContext) -> impl IntoResponse {
     Json(UserResponse::from(data.user))
 }
 
-/// Admin tạo user mới (cần permission USER_CREATE — đã kiểm ở middleware).
+// Admin tạo user mới (cần permission USER_CREATE — đã kiểm ở middleware).
 pub async fn create_user(
     data: AuthContext,
     State(state): State<AppState>,
@@ -30,4 +37,38 @@ pub async fn create_user(
 
     let res = state.user_service.create_user(payload).await?;
     Ok((StatusCode::CREATED, Json(res)))
+}
+
+// Cập nhật username/status của user (cần USER_UPDATE). Vô hiệu hoá → thu hồi phiên ngay.
+pub async fn update_user(
+    State(state): State<AppState>,
+    Path(id): Path<uuid::Uuid>,
+    ValidatedBodyJson(payload): ValidatedBodyJson<UpdateUserRequest>,
+) -> Result<impl IntoResponse, ApiError> {
+    let res = state.user_service.update_user(id, payload).await?;
+    if res.status == "DEACTIVATED" {
+        state.auth_service.logout_all(id).await?;
+    }
+    Ok(Json(res))
+}
+
+// Xoá mềm user (cần USER_DELETE) + thu hồi mọi phiên đăng nhập của user đó.
+pub async fn delete_user(
+    State(state): State<AppState>,
+    Path(id): Path<uuid::Uuid>,
+) -> Result<impl IntoResponse, ApiError> {
+    state.user_service.delete_user(id).await?;
+    state.auth_service.logout_all(id).await?;
+    Ok(Json(json!({ "message": "Đã xoá người dùng" })))
+}
+
+// Admin gửi lại email thiết lập tài khoản cho user chưa kích hoạt (cần USER_CREATE).
+pub async fn resend_setup(
+    State(state): State<AppState>,
+    Path(id): Path<uuid::Uuid>,
+) -> Result<impl IntoResponse, ApiError> {
+    state.user_service.resend_setup(id).await?;
+    Ok(Json(
+        json!({ "message": "Đã gửi lại email thiết lập tài khoản" }),
+    ))
 }

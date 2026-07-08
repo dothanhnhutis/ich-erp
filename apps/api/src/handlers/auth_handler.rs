@@ -1,14 +1,11 @@
-use std::{
-    collections::HashMap,
-    net::{IpAddr, SocketAddr},
-};
+use std::net::{IpAddr, SocketAddr};
 
 use application::dto::auth_dto::{
     ClientContext, ForgotPasswordRequest, LoginRequest, SetPasswordRequest, SetupAccountRequest,
 };
 use axum::{
     Json,
-    extract::{ConnectInfo, Query, State},
+    extract::{ConnectInfo, State},
     http::HeaderMap,
     response::IntoResponse,
 };
@@ -46,8 +43,8 @@ pub async fn login_handler(
     Ok((jar.add(cookie), Json(response)))
 }
 
-/// Cookie `session` với thuộc tính dùng chung. `max_age = None` (kèm value rỗng) dùng để xóa cookie —
-/// PHẢI khớp `path`/`domain` với cookie lúc login thì trình duyệt mới gỡ.
+// Cookie `session` với thuộc tính dùng chung. `max_age = None` (kèm value rỗng) dùng để xóa cookie —
+// PHẢI khớp `path`/`domain` với cookie lúc login thì trình duyệt mới gỡ.
 fn session_cookie(
     value: String,
     secure: bool,
@@ -70,8 +67,8 @@ fn session_cookie(
     builder.build()
 }
 
-/// Đọc IP client: ưu tiên `X-Forwarded-For` (token đầu) → `X-Real-IP` → địa chỉ peer.
-/// Chỉ chấp nhận giá trị parse được thành `IpAddr` để tránh fail cast `::inet` (500).
+// Đọc IP client: ưu tiên `X-Forwarded-For` (token đầu) → `X-Real-IP` → địa chỉ peer.
+// Chỉ chấp nhận giá trị parse được thành `IpAddr` để tránh fail cast `::inet` (500).
 fn client_ip(headers: &HeaderMap, peer: SocketAddr) -> String {
     if let Some(xff) = headers.get("x-forwarded-for").and_then(|v| v.to_str().ok())
         && let Some(first) = xff.split(',').next()
@@ -94,7 +91,7 @@ fn user_agent(headers: &HeaderMap) -> Option<String> {
         .map(|s| s.to_string())
 }
 
-/// Đăng xuất phiên hiện tại + xóa cookie.
+// Đăng xuất phiên hiện tại + xóa cookie.
 pub async fn logout(
     State(state): State<AppState>,
     data: AuthContext,

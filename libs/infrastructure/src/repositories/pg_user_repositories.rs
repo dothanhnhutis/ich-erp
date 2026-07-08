@@ -1,5 +1,5 @@
 use domain::{
-    entities::user::{User, UserStatus},
+    entities::user::{User, UserStatus, UserUpdate},
     errors::DomainError,
     repositories::{RepositoryError, UserRepository},
 };
@@ -8,13 +8,13 @@ use sqlx::{
     types::chrono::{DateTime, Utc},
 };
 use std::str::FromStr;
-use uuid::Uuid;
+use uuid;
 
 use crate::persistence::error::map_sqlx_error;
 
 #[derive(Debug, sqlx::FromRow)]
 struct UserRow {
-    id: Uuid,
+    id: uuid::Uuid,
     email: String,
     password_hash: Option<String>,
     username: Option<String>,
@@ -147,9 +147,9 @@ impl UserRepository for PgUserRepository {
 
     async fn reset_password(
         &self,
-        user_id: Uuid,
+        user_id: uuid::Uuid,
         password_hash: &str,
-        token_id: Uuid,
+        token_id: uuid::Uuid,
     ) -> Result<(), RepositoryError> {
         let mut tx = self.pool.begin().await.map_err(map_sqlx_error)?;
 
@@ -171,12 +171,54 @@ impl UserRepository for PgUserRepository {
         tx.commit().await.map_err(map_sqlx_error)?;
         Ok(())
     }
+
+    async fn update(
+        &self,
+        id: uuid::Uuid,
+        changes: UserUpdate,
+    ) -> Result<Option<User>, RepositoryError> {
+        let status = changes.status.map(|s| s.as_str());
+        let sql = r#"
+            UPDATE users SET
+                username = COALESCE($2, username),
+                status = COALESCE($3, status),
+                deactivated_at = CASE
+                    WHEN $3 = 'DEACTIVATED' THEN NOW()
+                    WHEN $3 = 'ACTIVE' THEN NULL
+                    ELSE deactivated_at
+                END
+            WHERE id = $1 AND deleted_at IS NULL
+            RETURNING id, email, password_hash, username, status,
+                      deactivated_at, created_at, updated_at
+        "#;
+        let row: Option<UserRow> = sqlx::query_as(sql)
+            .bind(id)
+            .bind(&changes.username)
+            .bind(status)
+            .fetch_optional(&self.pool)
+            .await
+            .map_err(map_sqlx_error)?;
+        Ok(row.map(User::try_from).transpose()?)
+    }
+
+    async fn soft_delete(&self, id: uuid::Uuid) -> Result<(), RepositoryError> {
+        let res =
+            sqlx::query("UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL")
+                .bind(id)
+                .execute(&self.pool)
+                .await
+                .map_err(map_sqlx_error)?;
+        if res.rows_affected() == 0 {
+            return Err(RepositoryError::NotFound);
+        }
+        Ok(())
+    }
 }
 
 // Đánh dấu password token đã dùng; rows_affected != 1 nghĩa là token đã bị dùng (race) → lỗi → rollback.
 async fn mark_token_used(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    token_id: Uuid,
+    token_id: uuid::Uuid,
 ) -> Result<(), RepositoryError> {
     let used = sqlx::query(
         r#"UPDATE password_tokens SET used_at = NOW() WHERE id = $1 AND used_at IS NULL"#,

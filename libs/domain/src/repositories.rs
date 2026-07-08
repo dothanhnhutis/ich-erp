@@ -4,7 +4,7 @@ use crate::{
     entities::{
         password_token::{NewPasswordToken, PasswordToken, PasswordTokenType},
         session::{NewSession, Session},
-        user::{NewUser, User},
+        user::{NewUser, User, UserUpdate},
     },
     errors::DomainError,
 };
@@ -52,13 +52,25 @@ pub trait UserRepository: Send + Sync {
         token_id: uuid::Uuid,
     ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 
-    /// RESET: đặt mật khẩu mới (+ password_changed_at) + đánh dấu token đã dùng, atomic.
-    /// Không đụng status/username (user đã ACTIVE).
+    // RESET: đặt mật khẩu mới (+ password_changed_at) + đánh dấu token đã dùng, atomic.
+    // Không đụng status/username (user đã ACTIVE).
     fn reset_password(
         &self,
         user_id: uuid::Uuid,
         password_hash: &str,
         token_id: uuid::Uuid,
+    ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
+
+    fn update(
+        &self,
+        id: uuid::Uuid,
+        changes: UserUpdate,
+    ) -> impl Future<Output = Result<Option<User>, RepositoryError>> + Send;
+
+    // Xoá mềm (set deleted_at). NotFound nếu user không tồn tại / đã xoá.
+    fn soft_delete(
+        &self,
+        id: uuid::Uuid,
     ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }
 
@@ -82,6 +94,13 @@ pub trait UserSessionRepository: Send + Sync {
     fn revoke(
         &self,
         id: uuid::Uuid,
+        reason: &str,
+    ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
+
+    // Thu hồi tất cả phiên còn hiệu lực của một user (logout mọi thiết bị).
+    fn revoke_all_for_user(
+        &self,
+        user_id: uuid::Uuid,
         reason: &str,
     ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }

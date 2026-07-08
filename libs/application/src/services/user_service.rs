@@ -1,19 +1,34 @@
-use chrono::{Duration, Utc};
-use domain::{
-    entities::{
-        password_token::{NewPasswordToken, PasswordTokenType},
-        user::NewUser,
-    },
-    repositories::{PasswordTokenRepository, RoleRepository, UserRepository},
-};
-use shared::messaging::{EmailJob, SetPasswordEmail};
-
 use crate::{
-    dto::user_dto::{CreateUserRequest, CreateUserResponse},
+    dto::user_dto::{CreateUserRequest, CreateUserResponse, UpdateUserRequest, UserResponse},
     errors::AppError,
     ports::EmailPublisher,
     security::session_token::SessionToken,
 };
+use chrono::{Duration, Utc};
+use domain::{
+    entities::{
+        password_token::{NewPasswordToken, PasswordTokenType},
+        user::{NewUser, UserStatus, UserUpdate},
+    },
+    repositories::{PasswordTokenRepository, RoleRepository, UserRepository},
+};
+use shared::messaging::{EmailJob, SetPasswordEmail};
+use std::str::FromStr;
+
+// Parse chuỗi trạng thái → UserStatus, lỗi → Validation.
+fn parse_status(s: &str) -> Result<UserStatus, AppError> {
+    UserStatus::from_str(s).map_err(|_| AppError::Validation("Trạng thái không hợp lệ".into()))
+}
+
+// Parse trạng thái cho cập nhật — chỉ cho ACTIVE/DEACTIVATED (không cho PENDING_PASSWORD).
+fn parse_updatable_status(s: &str) -> Result<UserStatus, AppError> {
+    match parse_status(s)? {
+        UserStatus::PendingPassword => Err(AppError::Validation(
+            "Không thể đặt trạng thái PENDING_PASSWORD".into(),
+        )),
+        st => Ok(st),
+    }
+}
 
 pub struct UserService<UR, RR, PTR, EP>
 where
@@ -55,7 +70,7 @@ where
         }
     }
 
-    /// Sinh token INIT (raw vào link, hash lưu DB) + publish mail thiết lập tài khoản.
+    // Sinh token INIT (raw vào link, hash lưu DB) + publish mail thiết lập tài khoản.
     async fn send_setup_email(&self, user_id: uuid::Uuid, email: &str) -> Result<(), AppError> {
         let token = SessionToken::generate();
         let expires_at = Utc::now() + Duration::seconds(self.token_ttl_secs);
@@ -98,5 +113,57 @@ where
         Ok(CreateUserResponse {
             user_id: user.id.to_string(),
         })
+    }
+
+    // Cập nhật username/status của user. status chỉ nhận ACTIVE/DEACTIVATED.
+    pub async fn update_user(
+        &self,
+        id: uuid::Uuid,
+        req: UpdateUserRequest,
+    ) -> Result<UserResponse, AppError> {
+        let status = match req.status.as_deref() {
+            Some(s) => Some(parse_updatable_status(s)?),
+            None => None,
+        };
+
+        let changes = UserUpdate {
+            username: req.username.map(|u| u.trim().to_string()),
+            status,
+        };
+
+        let updated = self
+            .user_repo
+            .update(id, changes)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Người dùng không tồn tại".into()))?;
+        Ok(UserResponse::from(updated))
+    }
+
+    // Xoá mềm user (404 nếu không tồn tại / đã xoá). Thu hồi phiên do handler điều phối.
+    pub async fn delete_user(&self, id: uuid::Uuid) -> Result<(), AppError> {
+        self.user_repo.soft_delete(id).await?;
+        Ok(())
+    }
+
+    // Admin gửi lại mail thiết lập cho user CHƯA kích hoạt: vô hiệu token INIT cũ
+    // + cấp token mới (24h) + gửi lại mail.
+    pub async fn resend_setup(&self, user_id: uuid::Uuid) -> Result<(), AppError> {
+        let user = self
+            .user_repo
+            .find_by_id(user_id)
+            .await?
+            .ok_or_else(|| AppError::NotFound("Người dùng không tồn tại".into()))?;
+        if user.status != UserStatus::PendingPassword {
+            return Err(AppError::Validation(
+                "Tài khoản đã kích hoạt, không thể gửi lại liên kết".into(),
+            ));
+        }
+
+        // Vô hiệu token INIT cũ còn hiệu lực → chỉ link mới nhất dùng được.
+        self.password_token_repo
+            .invalidate_active(user_id, PasswordTokenType::Init)
+            .await?;
+        self.send_setup_email(user_id, &user.email).await?;
+        Ok(())
     }
 }
