@@ -16,7 +16,8 @@ where
     let manage = Router::<S>::new()
         .route("/", post(user_handler::create_user))
         .route("/{id}", patch(user_handler::update_user))
-        .route("/{id}", delete(user_handler::delete_user));
+        .route("/{id}", delete(user_handler::delete_user))
+        .route("/{id}/resend-setup", post(user_handler::resend_setup));
 
     profile.merge(manage)
 }
