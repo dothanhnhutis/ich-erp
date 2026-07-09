@@ -16,7 +16,7 @@ resolver = "3"
 # Desktop app
 tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
+tauri-plugin-opener = "2.5.4"
 
 # 1. Web Framework & Async Runtime
 axum = { version = "0.8.9", features = ["macros"] }
