@@ -7,12 +7,11 @@ export const Route = createFileRoute("/login")({
 
 function RouteComponent() {
   return (
-    <div className="flex flex-col gap-4 p-6 md:p-10 h-screen relative">
+    <div className="flex flex-col gap-4 p-6 md:p-10 h-screen">
       <div className="flex flex-1 items-center justify-center">
-        <div className="w-full max-w-xs bg-card">
+        <div className="w-full max-w-xs">
           <LoginForm />
         </div>
-        <div className="absolute bottom-0 right-0">theme</div>
       </div>
     </div>
   );

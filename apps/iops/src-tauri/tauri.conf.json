@@ -16,7 +16,7 @@
         "title": "iops",
         "width": 1920,
         "height": 1080,
-        "visible": true
+        "visible": false
       },
       {
         "label": "login",
@@ -24,8 +24,7 @@
         "width": 480,
         "height": 600,
         "center": true,
-        "resizable": false,
-        "visible": false
+        "resizable": false
       }
     ],
     "security": {
