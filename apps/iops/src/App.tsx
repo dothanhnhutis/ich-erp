@@ -1,8 +1,6 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./index.css";
-import Login from "./features/login";
 import {
   createRouter,
   createHashHistory,
@@ -10,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { ThemeProvider } from "./contexts/theme-context";
+import { AuthProvider, useAuth } from "./contexts/auth-context";
 
 const hashHistory = createHashHistory();
 
@@ -18,6 +17,9 @@ const router = createRouter({
   defaultPreload: "intent",
   scrollRestoration: true,
   history: hashHistory,
+  context: {
+    auth: undefined!,
+  },
 });
 
 // Register things for typesafety
@@ -25,6 +27,15 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
   }
+}
+
+function InnerApp() {
+  const { auth } = useAuth();
+  return (
+    <main>
+      <RouterProvider router={router} context={{ auth }} />
+    </main>
+  );
 }
 
 function App() {
@@ -37,11 +48,11 @@ function App() {
   }
 
   return (
-    <main>
+    <AuthProvider>
       <ThemeProvider>
-        <RouterProvider router={router} />
+        <InnerApp />
       </ThemeProvider>
-    </main>
+    </AuthProvider>
   );
 }
 
