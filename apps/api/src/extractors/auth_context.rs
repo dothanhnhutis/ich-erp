@@ -2,10 +2,10 @@ use crate::error::ApiError;
 use application::errors::AppError;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
-use domain::entities::session::Session;
-use domain::entities::user::User;
+use domain::entities::{session::Session, user::User};
+use serde::Deserialize;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct AuthContext {
     pub user: User,
     pub session: Session,

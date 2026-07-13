@@ -8,11 +8,12 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import ichLogo from "@/assets/logo.png";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import * as z from "zod";
 import { useForm } from "@tanstack/react-form";
 import { Spinner } from "./ui/spinner";
-import { invoke } from "@tauri-apps/api/core";
+import { useAuth } from "@/contexts/auth-context";
+import { ApiError } from "@/lib/api";
 
 const formSchema = z.object({
   email: z.email("Email và mật khẩu không hợp lệ."),
@@ -26,19 +27,32 @@ export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
+  const { login } = useAuth();
+  const navigation = useNavigate();
   const form = useForm({
     defaultValues: {
-      email: "",
-      password: "",
+      email: "gaconght@gmail.com",
+      password: "@Abc123123",
     },
     validators: {
       onSubmit: formSchema,
     },
     onSubmit: async ({ value }) => {
-      console.log(value);
-      await invoke("login");
+      try {
+        await login(value.email, value.password);
+        navigation({
+          to: "/users",
+          replace: true,
+        });
+      } catch (err: unknown) {
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : "Có lỗi xảy ra, vui lòng thử lại";
+      }
     },
   });
+
   return (
     <form
       className={cn("flex flex-col gap-6", className)}
@@ -117,12 +131,20 @@ export function LoginForm({
             );
           }}
         />
-        <Field>
-          <Button type="submit">
-            Đăng nhập
-            <Spinner data-icon="inline-start" />
-          </Button>
-        </Field>
+
+        <form.Subscribe
+          selector={(state) => [state.canSubmit, state.isSubmitting]}
+          children={([canSubmit, isSubmitting]) => {
+            return (
+              <Field>
+                <Button type="submit" disabled={isSubmitting}>
+                  Đăng nhập
+                  {isSubmitting && <Spinner data-icon="inline-start" />}
+                </Button>
+              </Field>
+            );
+          }}
+        />
       </FieldGroup>
     </form>
   );

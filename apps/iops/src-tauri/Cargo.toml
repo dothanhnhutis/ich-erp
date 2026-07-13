@@ -18,6 +18,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build.workspace = true
 
 [dependencies]
+application = { path = "../../../libs/application" }
+domain = { path = "../../../libs/domain" }
+
+
 tauri.workspace = true
 tauri-plugin-opener.workspace = true
 serde.workspace = true

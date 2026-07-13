@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 #[serde(deny_unknown_fields)]
 pub struct LoginRequest {
     #[validate(email)]
@@ -21,7 +21,7 @@ pub struct LoginRequest {
     pub device_id: Option<String>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LoginResponse {
     pub user_id: String,
     /// Token session THÔ — desktop dùng làm bearer, web app lưu trong cookie.

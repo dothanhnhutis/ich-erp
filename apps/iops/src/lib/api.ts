@@ -45,13 +45,44 @@ export type ProfileResponse = {
   permissions: string[];
 };
 
-export type LoginOutcome = {
+export type Session = {
+  id: string;
   user_id: string;
-  profile: ProfileResponse;
+  token_hash: string;
+  device_id: string | null;
+  device_name: string | null;
+  device_type: string;
+  platform: string | null;
+  app_version: string | null;
+  user_agent: string | null;
+  ip_address: string | null;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type userProfile = {
+  id: string;
+  email: string;
+  username: string | null;
+  status: UserStatus;
+  deactivated_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type LoginResponse = {
+  session: Session;
+  user: userProfile;
+  permission_codes: string[];
 };
 
 export const api = {
   // Auth — KHÔNG dùng authedCall
   login: (email: string, password: string) =>
-    call<LoginOutcome>("api_login", { email, password }),
+    call<LoginResponse>("login", {
+      payload: { email, password, device_type: "web" },
+    }),
 };

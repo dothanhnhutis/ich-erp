@@ -19,7 +19,9 @@ use crate::{
 
 // Trả về thông tin user đang đăng nhập (AuthContext do middleware require_auth gắn).
 pub async fn me(data: AuthContext) -> impl IntoResponse {
-    Json(UserResponse::from(data.user))
+    Json(
+        json!({"user":UserResponse::from(data.user), "session": data.session, "permission_codes": data.permission_codes } ),
+    )
 }
 
 // Admin tạo user mới (cần permission USER_CREATE — đã kiểm ở middleware).

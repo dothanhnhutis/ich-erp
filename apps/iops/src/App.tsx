@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import "./index.css";
 import {
   createRouter,
@@ -31,28 +29,26 @@ declare module "@tanstack/react-router" {
 
 function InnerApp() {
   const { auth } = useAuth();
-  return (
-    <main>
-      <RouterProvider router={router} context={{ auth }} />
-    </main>
-  );
+  return <RouterProvider router={router} context={{ auth }} />;
 }
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  // const [greetMsg, setGreetMsg] = useState("");
+  // const [name, setName] = useState("");
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  // async function greet() {
+  //   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+  //   setGreetMsg(await invoke("greet", { name }));
+  // }
 
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <InnerApp />
-      </ThemeProvider>
-    </AuthProvider>
+    <main>
+      <AuthProvider>
+        <ThemeProvider>
+          <InnerApp />
+        </ThemeProvider>
+      </AuthProvider>
+    </main>
   );
 }
 

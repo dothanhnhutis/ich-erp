@@ -9,7 +9,7 @@ export const Route = createFileRoute("/_auth")({
   }),
   component: RouteComponent,
   beforeLoad: ({ context, search }) => {
-    if (context.auth.profile) {
+    if (context.auth.user) {
       throw redirect({ to: search.redirect || fallback });
     }
   },
