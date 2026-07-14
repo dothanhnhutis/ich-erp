@@ -16,7 +16,7 @@ const router = createRouter({
   scrollRestoration: true,
   history: hashHistory,
   context: {
-    auth: undefined!,
+    state: undefined!,
   },
 });
 
@@ -28,8 +28,9 @@ declare module "@tanstack/react-router" {
 }
 
 function InnerApp() {
-  const { auth } = useAuth();
-  return <RouterProvider router={router} context={{ auth }} />;
+  const { state } = useAuth();
+  if (state?.hydrating) return null;
+  return <RouterProvider router={router} context={{ state }} />;
 }
 
 function App() {

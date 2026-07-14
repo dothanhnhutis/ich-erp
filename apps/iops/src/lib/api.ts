@@ -85,4 +85,6 @@ export const api = {
     call<LoginResponse>("login", {
       payload: { email, password, device_type: "web" },
     }),
+  hydrate: () => call<LoginResponse | null>("hydrate"),
+  logout: () => call<void>("logout"),
 };

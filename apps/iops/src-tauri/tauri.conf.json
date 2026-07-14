@@ -10,23 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      {
-        "label": "main",
-        "title": "iops",
-        "width": 1920,
-        "height": 1080,
-        "visible": false
-      },
-      {
-        "label": "login",
-        "title": "Login",
-        "width": 480,
-        "height": 600,
-        "center": true,
-        "resizable": false
-      }
-    ],
+    "windows": [],
     "security": {
       "csp": null
     }
