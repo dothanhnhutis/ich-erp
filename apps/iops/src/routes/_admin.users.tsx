@@ -1,9 +1,20 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { api } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/_admin/users')({
+export const Route = createFileRoute("/_admin/users")({
   component: RouteComponent,
-})
+});
 
 function RouteComponent() {
-  return <div>Hello "/_admin/users"!</div>
+  const query = useQuery({
+    queryKey: ["users"],
+    queryFn: async () => {
+      await api.me();
+    },
+  });
+
+  console.log("query.data", query.data);
+
+  return <div>Hello "/_admin/users"!</div>;
 }

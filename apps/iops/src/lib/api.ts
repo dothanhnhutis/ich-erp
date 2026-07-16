@@ -33,6 +33,26 @@ async function call<T>(
     );
   }
 }
+
+/**
+ * Gọi command authed: nếu gặp 401 thì tự refresh token và retry 1 lần.
+ * Dùng cho mọi endpoint cần access token. KHÔNG dùng cho login/logout/refresh/hydrate.
+ */
+async function authedCall<T>(
+  cmd: string,
+  args?: Record<string, unknown>,
+): Promise<T> {
+  try {
+    return await call<T>(cmd, args);
+  } catch (e) {
+    if (e instanceof ApiError && e.kind === "Unauthorized") {
+      // await call<null>("api_refresh");
+      return await call<T>(cmd, args);
+    }
+    throw e;
+  }
+}
+
 export type UserStatus = "ACTIVE" | "DEACTIVATED" | "PENDING_PASSWORD";
 
 export type ProfileResponse = {
@@ -79,6 +99,30 @@ export type LoginResponse = {
   permission_codes: string[];
 };
 
+export type ListParams = {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+};
+
+export type PaginatedResponse<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+export type UserResponse = {
+  id: string;
+  email: string;
+  username: string | null;
+  status: UserStatus;
+  deactivated_at: string | null;
+  // roles: RoleResponse[];
+  created_at: string;
+  updated_at: string;
+};
+
 export const api = {
   // Auth — KHÔNG dùng authedCall
   login: (email: string, password: string) =>
@@ -87,4 +131,14 @@ export const api = {
     }),
   hydrate: () => call<LoginResponse | null>("hydrate"),
   logout: () => call<void>("logout"),
+
+  // User
+  listUsers: (params: ListParams = {}) =>
+    call<PaginatedResponse<UserResponse>>("list_users", {
+      page: params.page,
+      pageSize: params.pageSize,
+      q: params.q,
+    }),
+
+  me: () => call<UserResponse>("me"),
 };

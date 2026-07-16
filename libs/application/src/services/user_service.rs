@@ -1,5 +1,8 @@
 use crate::{
-    dto::user_dto::{CreateUserRequest, CreateUserResponse, UpdateUserRequest, UserResponse},
+    dto::{
+        pagination_dto::{PaginatedResponse, PaginationParams},
+        user_dto::{CreateUserRequest, CreateUserResponse, UpdateUserRequest, UserResponse},
+    },
     errors::AppError,
     ports::EmailPublisher,
     security::session_token::SessionToken,
@@ -8,7 +11,7 @@ use chrono::{Duration, Utc};
 use domain::{
     entities::{
         password_token::{NewPasswordToken, PasswordTokenType},
-        user::{NewUser, UserStatus, UserUpdate},
+        user::{NewUser, User, UserStatus, UserUpdate},
     },
     repositories::{PasswordTokenRepository, RoleRepository, UserRepository},
 };
@@ -92,6 +95,26 @@ where
             }))
             .await?;
         Ok(())
+    }
+
+    pub async fn list_paginated(
+        &self,
+        params: &PaginationParams,
+    ) -> Result<PaginatedResponse<UserResponse>, AppError> {
+        let (users, total) = self
+            .user_repo
+            .find_paginated(params.offset(), params.page_size(), params.search())
+            .await?;
+        let mut items = Vec::with_capacity(users.len());
+        for user in users {
+            items.push(UserResponse::from(user));
+        }
+        Ok(PaginatedResponse {
+            items,
+            total,
+            page: params.page(),
+            page_size: params.page_size(),
+        })
     }
 
     pub async fn create_user(

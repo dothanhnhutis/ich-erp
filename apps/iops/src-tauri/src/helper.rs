@@ -7,7 +7,7 @@ use crate::{
     error::{map_response_error, ApiError},
 };
 
-pub const API_BASE_URL: &str = "http://0.0.0.0:4000/api/v1";
+pub const API_BASE_URL: &str = "http://localhost:4000/api/v1";
 
 // ===== Token persistence helpers =====
 

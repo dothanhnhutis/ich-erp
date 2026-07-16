@@ -28,6 +28,15 @@ pub enum RepositoryError {
 }
 
 pub trait UserRepository: Send + Sync {
+    /// Trả về 1 trang user + tổng số rows (tính theo search filter).
+    /// `search` ILIKE trên email + username (case-insensitive substring).
+    fn find_paginated(
+        &self,
+        offset: u32,
+        limit: u32,
+        search: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<(Vec<User>, u64), RepositoryError>> + Send;
+
     fn find_by_email(
         &self,
         email: &str,

@@ -1,10 +1,13 @@
 use application::{
-    dto::user_dto::{CreateUserRequest, UpdateUserRequest, UserResponse},
+    dto::{
+        pagination_dto::{PaginatedResponse, PaginationParams},
+        user_dto::{CreateUserRequest, UpdateUserRequest, UserResponse},
+    },
     errors::AppError,
 };
 use axum::{
     Json,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -22,6 +25,14 @@ pub async fn me(data: AuthContext) -> impl IntoResponse {
     Json(
         json!({"user":UserResponse::from(data.user), "session": data.session, "permission_codes": data.permission_codes } ),
     )
+}
+
+pub async fn list(
+    State(state): State<AppState>,
+    Query(params): Query<PaginationParams>,
+) -> Result<Json<PaginatedResponse<UserResponse>>, ApiError> {
+    let result = state.user_service.list_paginated(&params).await?;
+    Ok(Json(result))
 }
 
 // Admin tạo user mới (cần permission USER_CREATE — đã kiểm ở middleware).

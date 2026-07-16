@@ -59,6 +59,53 @@ impl PgUserRepository {
 }
 
 impl UserRepository for PgUserRepository {
+    async fn find_paginated(
+        &self,
+        offset: u32,
+        limit: u32,
+        search: Option<&str>,
+    ) -> Result<(Vec<User>, u64), RepositoryError> {
+        let like_pattern = search.map(|s| format!("%{}%", s));
+
+        let total: i64 = sqlx::query_scalar(
+            r#"
+            SELECT COUNT(*) FROM users
+            WHERE $1::text IS NULL
+               OR email ILIKE $1
+               OR username ILIKE $1
+            "#,
+        )
+        .bind(like_pattern.as_deref())
+        .fetch_one(&self.pool)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        let sql = format!(
+            r#"
+            {}
+            WHERE $1::text IS NULL
+               OR email ILIKE $1
+               OR username ILIKE $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3
+            "#,
+            SELECT_USER
+        );
+        let rows: Vec<UserRow> = sqlx::query_as(AssertSqlSafe(sql))
+            .bind(like_pattern.as_deref())
+            .bind(limit as i64)
+            .bind(offset as i64)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(map_sqlx_error)?;
+
+        let users = rows
+            .into_iter()
+            .map(User::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok((users, total as u64))
+    }
+
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, RepositoryError> {
         let sql = format!("{} WHERE email = $1 AND deleted_at IS NULL", SELECT_USER);
         let row: Option<UserRow> = sqlx::query_as(AssertSqlSafe(sql))

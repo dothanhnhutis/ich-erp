@@ -30,7 +30,9 @@ pub fn run() {
             auth::login,
             auth::hydrate,
             auth::logout,
-            user::me
+            user::me,
+            user::list_users,
+            user::get_user_by_id
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -7,17 +7,24 @@ import {
 import { routeTree } from "./routeTree.gen";
 import { ThemeProvider } from "./contexts/theme-context";
 import { AuthProvider, useAuth } from "./contexts/auth-context";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const hashHistory = createHashHistory();
+const queryClient = new QueryClient();
 
 const router = createRouter({
   routeTree,
-  defaultPreload: "intent",
-  scrollRestoration: true,
   history: hashHistory,
   context: {
     state: undefined!,
+    queryClient,
   },
+
+  defaultPreload: "intent",
+  // Since we're using React Query, we don't want loader calls to ever be stale
+  // This will ensure that the loader is always called when the route is preloaded or visited
+  defaultPreloadStaleTime: 0,
+  scrollRestoration: true,
 });
 
 // Register things for typesafety
@@ -30,18 +37,15 @@ declare module "@tanstack/react-router" {
 function InnerApp() {
   const { state } = useAuth();
   if (state?.hydrating) return null;
-  return <RouterProvider router={router} context={{ state }} />;
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} context={{ state }} />
+    </QueryClientProvider>
+  );
 }
 
 function App() {
-  // const [greetMsg, setGreetMsg] = useState("");
-  // const [name, setName] = useState("");
-
-  // async function greet() {
-  //   // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  //   setGreetMsg(await invoke("greet", { name }));
-  // }
-
   return (
     <main>
       <AuthProvider>

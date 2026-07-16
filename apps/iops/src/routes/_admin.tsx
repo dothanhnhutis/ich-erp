@@ -1,4 +1,7 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { AppSidebar } from "@/components/app-sidebar";
+import NavHeader from "@/components/nav-header";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_admin")({
   component: RouteComponent,
@@ -9,5 +12,13 @@ export const Route = createFileRoute("/_admin")({
 });
 
 function RouteComponent() {
-  return <div>Hello "/_admin"!</div>;
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <NavHeader />
+        <Outlet />
+      </SidebarInset>
+    </SidebarProvider>
+  );
 }
