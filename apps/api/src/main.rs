@@ -1,8 +1,10 @@
 mod error;
 mod extractors;
 mod handlers;
+mod logger;
 mod middlewares;
 mod routes;
+
 use crate::routes::create_routes;
 use application::services::{
     account_service::AccountService, auth_service::AuthService, user_service::UserService,
@@ -28,6 +30,8 @@ use shared::{
     messaging::{EMAIL_EXCHANGE, EMAIL_ROUTING_KEY},
 };
 use std::{net::SocketAddr, sync::Arc};
+use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
+use tracing::Level;
 
 #[derive(Clone, FromRef)]
 struct AppState {
@@ -51,7 +55,8 @@ struct AppState {
 async fn main() {
     dotenv().ok();
 
-    tracing_subscriber::fmt::init();
+    logger::init();
+    // tracing_subscriber::fmt::init();
 
     let config = AppConfig::from_env().expect("Failed to load config");
 
@@ -114,6 +119,19 @@ async fn main() {
 
     let app = Router::new()
         .nest("/api", create_routes(state.clone()))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(
+                    DefaultMakeSpan::new()
+                        .level(Level::INFO)
+                        .include_headers(false),
+                )
+                .on_response(
+                    DefaultOnResponse::new()
+                        .level(Level::INFO)
+                        .latency_unit(tower_http::LatencyUnit::Millis),
+                ),
+        )
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await.unwrap();

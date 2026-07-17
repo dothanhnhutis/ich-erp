@@ -9,9 +9,7 @@ export const Route = createFileRoute("/_admin/users")({
 function RouteComponent() {
   const query = useQuery({
     queryKey: ["users"],
-    queryFn: async () => {
-      await api.me();
-    },
+    queryFn: api.listUsers,
   });
 
   console.log("query.data", query.data);
