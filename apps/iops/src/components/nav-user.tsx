@@ -23,7 +23,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { Skeleton } from "./ui/skeleton";
 
 export function NavUser({
   user,
@@ -35,10 +36,29 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const { state, logout } = useAuth();
 
   const handleLogout = async () => {
-    await api.logout();
+    await logout();
   };
+
+  if (state.hydrating)
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <Skeleton className="h-12" />
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+
+  if (!state.data)
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <p>tai thong tin user that bai</p>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
 
   return (
     <SidebarMenu>
@@ -57,8 +77,10 @@ export function NavUser({
               <AvatarFallback className="rounded-lg">CN</AvatarFallback>
             </Avatar>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.email}</span>
+              <span className="truncate font-medium">
+                {state.data.user.username}
+              </span>
+              <span className="truncate text-xs">{state.data.user.email}</span>
             </div>
             <ChevronsUpDown className="ml-auto size-4" />
           </DropdownMenuTrigger>
@@ -76,8 +98,12 @@ export function NavUser({
                     <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
+                    <span className="truncate font-medium">
+                      {state.data.user.username}
+                    </span>
+                    <span className="truncate text-xs">
+                      {state.data.user.email}
+                    </span>
                   </div>
                 </div>
               </DropdownMenuItem>

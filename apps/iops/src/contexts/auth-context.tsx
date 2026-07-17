@@ -16,7 +16,7 @@ export type AuthState = {
 };
 
 export type AuthContextValue = {
-  state: AuthState | null;
+  state: AuthState;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   //   refreshProfile: () => Promise<void>;
