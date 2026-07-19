@@ -1,101 +1,22 @@
-import { api, UserResponse } from "@/lib/api";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import * as z from "zod";
-
-const userSearchSchema = z.object({
-  page: z.number().default(1),
-  page_size: z.number().default(10),
-  // filter: z.string().default(""),
-  // sort: z.enum(["newest", "oldest", "price"]).default("newest"),
-});
-
-export const Route = createFileRoute("/_admin/users")({
-  component: RouteComponent,
-  validateSearch: userSearchSchema,
-});
-
+import { cn } from "@/lib/utils";
+import { useNavigate } from "@tanstack/react-router";
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
-import { Skeleton } from "@/components/ui/skeleton";
-
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "./ui/table";
 import React from "react";
-
-export const columns: ColumnDef<UserResponse>[] = [
-  {
-    accessorKey: "email",
-    header: () => <TableHead className="w-1/2">Email</TableHead>,
-  },
-  {
-    accessorKey: "username",
-    header: () => <TableHead className="w-1/4">Username</TableHead>,
-  },
-
-  {
-    accessorKey: "status",
-    header: () => <TableHead className="w-1/4">Status</TableHead>,
-  },
-  {
-    accessorKey: "action",
-    header: () => <TableHead className="w-1/4"></TableHead>,
-    cell: ({ row }) => {
-      const payment = row.original;
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={<Button variant="secondary" className="h-8 w-8 p-0" />}
-          >
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-44" align="end">
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem
-                onClick={() => navigator.clipboard.writeText(payment.id)}
-              >
-                Copy payment ID
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>View customer</DropdownMenuItem>
-              <DropdownMenuItem variant="destructive">
-                Vô hiệu hoá
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      );
-    },
-  },
-];
-
-import { type Table as TTable } from "@tanstack/react-table";
+import { type Table as TDataTable } from "@tanstack/react-table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Button } from "./ui/button";
 import {
   ChevronLeft,
   ChevronRight,
@@ -103,16 +24,8 @@ import {
   ChevronsRight,
 } from "lucide-react";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
 interface DataTablePaginationProps<TData> {
-  table: TTable<TData>;
+  table: TDataTable<TData>;
 }
 
 export function DataTablePagination<TData>({
@@ -196,7 +109,7 @@ export function DataTablePagination<TData>({
   );
 }
 
-type DataTableProps<TData, TValue> = React.ComponentProps<"div"> & {
+export type DataTableProps<TData, TValue> = React.ComponentProps<"div"> & {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
   total: number;
@@ -296,71 +209,6 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
       <DataTablePagination table={table} />
-    </div>
-  );
-}
-
-function RouteComponent() {
-  const { page, page_size } = Route.useSearch();
-
-  const { isPending, data } = useQuery({
-    queryKey: ["users", { page, page_size }],
-    queryFn: async () => await api.listUsers({ page, pageSize: page_size }),
-    placeholderData: keepPreviousData,
-  });
-
-  return (
-    <div className="container mx-auto p-4">
-      <div className="card"></div>
-      {isPending ? (
-        <div className="overflow-hidden rounded-md border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-1/2">
-                  <Skeleton className="h-4 w-20" />
-                </TableHead>
-                <TableHead className="w-1/4">
-                  <Skeleton className="h-4 w-20" />
-                </TableHead>
-                <TableHead className="w-1/4">
-                  <Skeleton className="h-4 w-20" />
-                </TableHead>
-                <TableHead className="w-1/4">
-                  <Skeleton className="h-4 w-20" />
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">
-                    <Skeleton className="h-4 w-48" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                  <TableCell className="text-left">
-                    <Skeleton className="h-4 w-24" />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={data?.items ?? []}
-          className="bg-card"
-          page={page}
-          total={data?.total ?? 0}
-          pageSize={page_size}
-        />
-      )}
     </div>
   );
 }

@@ -40,20 +40,20 @@ function InnerApp() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} context={{ state }} />
+      <main>
+        <RouterProvider router={router} context={{ state }} />
+      </main>
     </QueryClientProvider>
   );
 }
 
 function App() {
   return (
-    <main>
-      <AuthProvider>
-        <ThemeProvider>
-          <InnerApp />
-        </ThemeProvider>
-      </AuthProvider>
-    </main>
+    <AuthProvider>
+      <ThemeProvider>
+        <InnerApp />
+      </ThemeProvider>
+    </AuthProvider>
   );
 }
 

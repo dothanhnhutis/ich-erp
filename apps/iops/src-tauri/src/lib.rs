@@ -2,6 +2,7 @@ mod apis;
 mod error;
 mod helper;
 use apis::auth;
+use apis::role;
 use apis::user;
 use helper::{show_login, show_main};
 
@@ -30,6 +31,7 @@ pub fn run() {
             auth::login,
             auth::hydrate,
             auth::logout,
+            role::list_roles,
             user::me,
             user::list_users,
             user::get_user_by_id

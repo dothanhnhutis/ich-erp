@@ -15,7 +15,7 @@ function RootComponent() {
   return (
     <React.Fragment>
       <Outlet />
-      <ReactQueryDevtools buttonPosition="top-left" />
+      <ReactQueryDevtools buttonPosition="bottom-right" />
       <TanStackRouterDevtools position="bottom-right" />
     </React.Fragment>
   );

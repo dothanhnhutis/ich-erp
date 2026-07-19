@@ -123,6 +123,23 @@ export type UserResponse = {
   updated_at: string;
 };
 
+export type PermissionResponse = {
+  id: string;
+  code: string;
+  description: string;
+};
+export type RoleResponse = {
+  id: string;
+  name: string;
+  description: string;
+  status: string;
+  can_delete: boolean;
+  can_update: boolean;
+  permissions: PermissionResponse[];
+  created_at: string;
+  updated_at: string;
+};
+
 export const api = {
   // Auth — KHÔNG dùng authedCall
   login: (email: string, password: string) =>
@@ -135,6 +152,13 @@ export const api = {
   // User
   listUsers: (params: ListParams = {}) =>
     call<PaginatedResponse<UserResponse>>("list_users", {
+      page: params.page,
+      pageSize: params.pageSize,
+      q: params.q,
+    }),
+
+  listRoles: (params: ListParams = {}) =>
+    call<PaginatedResponse<RoleResponse>>("list_roles", {
       page: params.page,
       pageSize: params.pageSize,
       q: params.q,

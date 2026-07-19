@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthLoginRouteImport } from './routes/_auth.login'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth.forgot-password'
 import { Route as AdminUsersRouteImport } from './routes/_admin.users'
+import { Route as AdminRolesRouteImport } from './routes/_admin.roles'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
@@ -44,15 +45,22 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminRolesRoute = AdminRolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/roles': typeof AdminRolesRoute
   '/users': typeof AdminUsersRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/roles': typeof AdminRolesRoute
   '/users': typeof AdminUsersRoute
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
@@ -62,20 +70,22 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_admin': typeof AdminRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
+  '/_admin/roles': typeof AdminRolesRoute
   '/_admin/users': typeof AdminUsersRoute
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/users' | '/forgot-password' | '/login'
+  fullPaths: '/' | '/roles' | '/users' | '/forgot-password' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/users' | '/forgot-password' | '/login'
+  to: '/' | '/roles' | '/users' | '/forgot-password' | '/login'
   id:
     | '__root__'
     | '/'
     | '/_admin'
     | '/_auth'
+    | '/_admin/roles'
     | '/_admin/users'
     | '/_auth/forgot-password'
     | '/_auth/login'
@@ -131,14 +141,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/roles': {
+      id: '/_admin/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof AdminRolesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminRolesRoute: typeof AdminRolesRoute
   AdminUsersRoute: typeof AdminUsersRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminRolesRoute: AdminRolesRoute,
   AdminUsersRoute: AdminUsersRoute,
 }
 
