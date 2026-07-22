@@ -299,6 +299,7 @@ impl RoleRepository for PgRoleRepository {
         }
 
         tx.commit().await.map_err(map_sqlx_error)?;
+
         Ok(Role::try_from(row)?)
     }
 

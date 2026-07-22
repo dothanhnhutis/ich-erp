@@ -1,6 +1,10 @@
 import { api, UserResponse } from "@/lib/api";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  useLocation,
+  useNavigate,
+} from "@tanstack/react-router";
 import * as z from "zod";
 
 const userSearchSchema = z.object({
@@ -214,6 +218,8 @@ export function DataTable<TData, TValue>({
   ...props
 }: DataTableProps<TData, TValue>) {
   const navigate = useNavigate();
+  const location = useLocation();
+  console.log("location", location.pathname);
   const table = useReactTable({
     data,
     columns,
@@ -230,7 +236,7 @@ export function DataTable<TData, TValue>({
       const current = { pageIndex: page - 1, pageSize };
       const next = typeof updater === "function" ? updater(current) : updater;
       navigate({
-        to: "/users",
+        to: location.pathname,
         search: (prev) => ({
           ...prev,
           page: next.pageSize == current.pageSize ? next.pageIndex + 1 : 1,
