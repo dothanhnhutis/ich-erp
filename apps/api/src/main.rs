@@ -7,7 +7,8 @@ mod routes;
 
 use crate::routes::create_routes;
 use application::services::{
-    account_service::AccountService, auth_service::AuthService, user_service::UserService,
+    account_service::AccountService, auth_service::AuthService,
+    permission_service::PermissionService, role_service::RoleService, user_service::UserService,
 };
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
@@ -21,7 +22,8 @@ use infrastructure::{
     postgres::pool::init_db_pool,
     repositories::{
         pg_password_token_repository::PgPasswordTokenRepository,
-        pg_role_repositories::PgRoleRepository, pg_user_repositories::PgUserRepository,
+        pg_permission_repository::PgPermissionRepository, pg_role_repositories::PgRoleRepository,
+        pg_user_repositories::PgUserRepository,
         pg_user_session_repositories::PgUserSessionRepository,
     },
 };
@@ -35,9 +37,11 @@ use tracing::Level;
 
 #[derive(Clone, FromRef)]
 struct AppState {
+    permission_service: Arc<PermissionService<PgPermissionRepository>>,
     auth_service: Arc<
         AuthService<PgUserRepository, PgUserSessionRepository, PgRoleRepository, RedisSessionCache>,
     >,
+    role_service: Arc<RoleService<PgRoleRepository>>,
     user_service: Arc<
         UserService<
             PgUserRepository,
@@ -69,7 +73,8 @@ async fn main() {
         .expect("Failed to connect to Redis");
 
     let cache = RedisSessionCache::new(redis_conn);
-
+    let permission_repo = PgPermissionRepository::new(pool.clone());
+    let role_repo = PgRoleRepository::new(pool.clone());
     let user_repo = PgUserRepository::new(pool.clone());
     let user_session_repo = PgUserSessionRepository::new(pool.clone());
     let role_repo = PgRoleRepository::new(pool.clone());
@@ -83,6 +88,9 @@ async fn main() {
     let email_publisher =
         LapinEmailPublisher::new(ch_pool.clone(), EMAIL_EXCHANGE, EMAIL_ROUTING_KEY);
 
+    let permission_service: Arc<PermissionService<PgPermissionRepository>> =
+        Arc::new(PermissionService::new(permission_repo));
+
     let auth_service = Arc::new(AuthService::new(
         user_repo.clone(),
         user_session_repo.clone(),
@@ -92,6 +100,8 @@ async fn main() {
         Duration::seconds(config.session_cache_ttl_secs),
         Duration::seconds(config.session_db_sync_secs),
     ));
+
+    let role_service = Arc::new(RoleService::new(role_repo.clone()));
 
     let user_service = Arc::new(UserService::new(
         user_repo.clone(),
@@ -111,7 +121,9 @@ async fn main() {
     ));
 
     let state = AppState {
+        permission_service,
         auth_service,
+        role_service,
         user_service,
         account_service,
         config: Arc::new(config),

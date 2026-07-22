@@ -3,6 +3,8 @@ use chrono::{DateTime, Utc};
 use crate::{
     entities::{
         password_token::{NewPasswordToken, PasswordToken, PasswordTokenType},
+        permission::Permission,
+        role::{Role, RoleStatus},
         session::{NewSession, Session},
         user::{NewUser, User, UserUpdate},
     },
@@ -114,6 +116,11 @@ pub trait UserSessionRepository: Send + Sync {
     ) -> impl Future<Output = Result<(), RepositoryError>> + Send;
 }
 
+pub trait PermissionRepository: Send + Sync {
+    fn find_all(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Vec<Permission>, RepositoryError>> + Send;
+}
 pub trait RoleRepository: Send + Sync {
     /// Mã permission của một user (JOIN user_roles→role_permissions→permissions),
     /// chỉ tính role đang ACTIVE và chưa xoá mềm.
@@ -121,6 +128,50 @@ pub trait RoleRepository: Send + Sync {
         &self,
         user_id: uuid::Uuid,
     ) -> impl Future<Output = Result<Vec<String>, RepositoryError>> + Send;
+
+    fn find_all(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Vec<Role>, RepositoryError>> + Send;
+
+    /// Trả về 1 trang role + tổng số rows (tính theo search filter).
+    /// `search` ILIKE trên name + description.
+    fn find_paginated(
+        &self,
+        offset: u32,
+        limit: u32,
+        search: Option<&str>,
+    ) -> impl std::future::Future<Output = Result<(Vec<Role>, u64), RepositoryError>> + Send;
+
+    fn find_by_id(
+        &self,
+        id: uuid::Uuid,
+    ) -> impl std::future::Future<Output = Result<Option<Role>, RepositoryError>> + Send;
+
+    fn find_permissions_for_role(
+        &self,
+        role_id: uuid::Uuid,
+    ) -> impl std::future::Future<Output = Result<Vec<Permission>, RepositoryError>> + Send;
+
+    fn create(
+        &self,
+        name: &str,
+        description: &str,
+        permission_ids: &[uuid::Uuid],
+    ) -> impl std::future::Future<Output = Result<Role, RepositoryError>> + Send;
+
+    fn update(
+        &self,
+        id: uuid::Uuid,
+        name: Option<&str>,
+        description: Option<&str>,
+        permission_ids: Option<&[uuid::Uuid]>,
+        status: Option<RoleStatus>,
+    ) -> impl std::future::Future<Output = Result<Role, RepositoryError>> + Send;
+
+    fn delete(
+        &self,
+        id: uuid::Uuid,
+    ) -> impl std::future::Future<Output = Result<(), RepositoryError>> + Send;
 }
 
 pub trait PasswordTokenRepository: Send + Sync {

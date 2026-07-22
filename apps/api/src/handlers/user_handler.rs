@@ -54,10 +54,17 @@ pub async fn create_user(
 
 // Cập nhật username/status của user (cần USER_UPDATE). Vô hiệu hoá → thu hồi phiên ngay.
 pub async fn update_user(
+    data: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<uuid::Uuid>,
     ValidatedBodyJson(payload): ValidatedBodyJson<UpdateUserRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+    if !data.permission_codes.iter().any(|p| p == "USER_UPDATE") {
+        return Err(ApiError::Domain(AppError::Forbidden(format!(
+            "Cần quyền: {}",
+            "USER_UPDATE"
+        ))));
+    }
     let res = state.user_service.update_user(id, payload).await?;
     if res.status == "DEACTIVATED" {
         state.auth_service.logout_all(id).await?;
@@ -67,9 +74,16 @@ pub async fn update_user(
 
 // Xoá mềm user (cần USER_DELETE) + thu hồi mọi phiên đăng nhập của user đó.
 pub async fn delete_user(
+    data: AuthContext,
     State(state): State<AppState>,
     Path(id): Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, ApiError> {
+    if !data.permission_codes.iter().any(|p| p == "USER_DELETE") {
+        return Err(ApiError::Domain(AppError::Forbidden(format!(
+            "Cần quyền: {}",
+            "USER_DELETE"
+        ))));
+    }
     state.user_service.delete_user(id).await?;
     state.auth_service.logout_all(id).await?;
     Ok(Json(json!({ "message": "Đã xoá người dùng" })))
