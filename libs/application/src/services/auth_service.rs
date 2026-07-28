@@ -85,7 +85,7 @@ where
         }
 
         let hash_str = user.password_hash.clone().ok_or_else(|| {
-            AppError::Unauthorized("Tài khoản chưa đặt mật khẩu. Vui lòng kiểm tra email.".into())
+            AppError::Unauthorized("Tài khoản chưa kích hoạt. Vui lòng kiểm tra email.".into())
         })?;
 
         let parsed = argon2::PasswordHash::new(&hash_str)

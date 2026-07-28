@@ -24,17 +24,6 @@ pub enum ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        // let (status, message) = match &self.0 {
-        //     AppError::Validation(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
-        //     AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
-        //     AppError::Internal(msg) => {
-        //         // tracing::error!("Internal error: {}", msg);
-        //         (StatusCode::INTERNAL_SERVER_ERROR, "Lỗi hệ thống".into())
-        //     }
-        // };
-
-        // (status, Json(json!({ "error": message }))).into_response()
-
         match self {
             // JsonRejection tự biết status: 400 syntax / 415 content-type / 422 sai kiểu
             ApiError::JsonRejection(rejection) => {
