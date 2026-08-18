@@ -25,3 +25,5 @@ sqlx.workspace = true
 chrono.workspace = true
 time.workspace = true
 tower-http.workspace = true
+aws_config.workspace = true
+aws_sdk_s3.workspace = true

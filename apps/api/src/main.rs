@@ -12,6 +12,7 @@ use application::services::{
 };
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
+use domain::upload::ObjectStorage;
 use dotenvy::dotenv;
 use infrastructure::{
     cache::{init_redis, session::RedisSessionCache},
@@ -26,6 +27,7 @@ use infrastructure::{
         pg_user_repositories::PgUserRepository,
         pg_user_session_repositories::PgUserSessionRepository,
     },
+    storage::r2::r2_file_storage::R2Config,
 };
 use shared::{
     config::AppConfig,
@@ -48,6 +50,7 @@ struct AppState {
             PgRoleRepository,
             PgPasswordTokenRepository,
             LapinEmailPublisher,
+            ObjectStorage,
         >,
     >,
     account_service:
@@ -71,6 +74,16 @@ async fn main() {
     let redis_conn = init_redis(&config.redis_url)
         .await
         .expect("Failed to connect to Redis");
+
+    let r2_config = R2Config {
+        public_bucket: String::new(),
+        private_bucket: String::new(),
+        public_cdn_base_url: String::new(),
+    };
+    let config = aws_config::load_from_env().await;
+    let client = aws_sdk_s3::Client::new(&config);
+
+    let r2_stograge = R2Storage::new(client, r2_config);
 
     let cache = RedisSessionCache::new(redis_conn);
     let permission_repo = PgPermissionRepository::new(pool.clone());
@@ -108,6 +121,7 @@ async fn main() {
         role_repo.clone(),
         password_token_repo.clone(),
         email_publisher.clone(),
+        r2_stograge,
         config.app_web_url.clone(),
         config.password_token_ttl_secs,
     ));

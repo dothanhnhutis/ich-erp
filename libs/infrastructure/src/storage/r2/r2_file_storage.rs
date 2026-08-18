@@ -151,8 +151,31 @@ where
             StorageError::Unavailable(format!("storage response error: {err:?}"))
         }
 
+        // SdkError::ServiceError(err) => {
+        //     // let status = err.raw_response().status().as_u16();
+        //     let status = err.raw().status().as_u16();
+
+        //     match status {
+        //         401 | 403 => StorageError::Unauthorized,
+
+        //         404 => StorageError::NotFound {
+        //             key: key.to_owned(),
+        //         },
+
+        //         400 => StorageError::InvalidRequest(format!("{:?}", err.err())),
+
+        //         429 | 500..=599 => {
+        //             StorageError::Unavailable(format!("storage returned HTTP {status}"))
+        //         }
+
+        //         _ => StorageError::Internal(format!(
+        //             "storage returned HTTP {status}: {:?}",
+        //             err.err()
+        //         )),
+        //     }
+        // }
         SdkError::ServiceError(err) => {
-            let status = err.raw_response().status().as_u16();
+            let status = err.raw().status().as_u16();
 
             match status {
                 401 | 403 => StorageError::Unauthorized,
@@ -173,8 +196,8 @@ where
                 )),
             }
         }
-
         other => StorageError::Internal(format!("unexpected storage error: {other:?}")),
+        // other => StorageError::Internal(format!("unexpected storage error: {other:?}")),
     }
 }
 
@@ -196,7 +219,7 @@ impl ObjectStorage for R2Storage {
             .content_type(content_type)
             .presigned(cfg)
             .await
-            .map_err(map_s3_error)?;
+            .map_err(|error| map_s3_error(error, key))?;
 
         Ok(req.uri().to_string())
     }
@@ -215,7 +238,7 @@ impl ObjectStorage for R2Storage {
             .content_type(content_type)
             .send()
             .await
-            .map_err(map_s3_error)?;
+            .map_err(|error| map_s3_error(error, key))?;
 
         let upload_id = out
             .upload_id()
@@ -247,7 +270,7 @@ impl ObjectStorage for R2Storage {
             .part_number(part_number)
             .presigned(cfg)
             .await
-            .map_err(map_s3_error)?;
+            .map_err(|error| map_s3_error(error, key))?;
 
         Ok(req.uri().to_string())
     }
@@ -281,7 +304,7 @@ impl ObjectStorage for R2Storage {
             .multipart_upload(upload)
             .send()
             .await
-            .map_err(map_s3_error)?;
+            .map_err(|error| map_s3_error(error, key))?;
 
         Ok(())
     }
@@ -299,7 +322,7 @@ impl ObjectStorage for R2Storage {
             .upload_id(upload_id)
             .send()
             .await
-            .map_err(map_s3_error)?;
+            .map_err(|error| map_s3_error(error, key))?;
 
         Ok(())
     }
@@ -311,7 +334,7 @@ impl ObjectStorage for R2Storage {
             .key(key)
             .send()
             .await
-            .map_err(map_s3_error)?;
+            .map_err(|error| map_s3_error(error, key))?;
 
         Ok(())
     }
@@ -341,7 +364,7 @@ impl ObjectStorage for R2Storage {
                     .key(key)
                     .presigned(cfg)
                     .await
-                    .map_err(map_s3_error)?;
+                    .map_err(|error| map_s3_error(error, key))?;
 
                 Ok(req.uri().to_string())
             }

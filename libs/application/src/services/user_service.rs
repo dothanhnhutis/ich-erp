@@ -14,6 +14,7 @@ use domain::{
         user::{NewUser, User, UserStatus, UserUpdate},
     },
     repositories::{PasswordTokenRepository, RoleRepository, UserRepository},
+    upload::ObjectStorage,
 };
 use shared::messaging::{EmailJob, SetPasswordEmail};
 use std::str::FromStr;
@@ -33,17 +34,19 @@ fn parse_updatable_status(s: &str) -> Result<UserStatus, AppError> {
     }
 }
 
-pub struct UserService<UR, RR, PTR, EP>
+pub struct UserService<UR, RR, PTR, EP, R2>
 where
     UR: UserRepository,
     RR: RoleRepository,
     PTR: PasswordTokenRepository,
     EP: EmailPublisher,
+    R2: ObjectStorage,
 {
     user_repo: UR,
     role_repo: RR,
     password_token_repo: PTR,
     email_publisher: EP,
+    r2_storage: R2,
     app_web_url: String,
     token_ttl_secs: i64,
 }
@@ -54,12 +57,14 @@ where
     RR: RoleRepository,
     PTR: PasswordTokenRepository,
     EP: EmailPublisher,
+    R2: ObjectStorage,
 {
     pub fn new(
         user_repo: UR,
         role_repo: RR,
         password_token_repo: PTR,
         email_publisher: EP,
+        r2_storage: R2,
         app_web_url: String,
         token_ttl_secs: i64,
     ) -> Self {
@@ -68,6 +73,7 @@ where
             role_repo,
             password_token_repo,
             email_publisher,
+            r2_storage,
             app_web_url,
             token_ttl_secs,
         }
@@ -188,5 +194,36 @@ where
             .await?;
         self.send_setup_email(user_id, &user.email).await?;
         Ok(())
+    }
+
+    // Upload Avatar
+
+    pub async fn upload_avatar(&self, user_id: uuid::Uuid) {
+        // let key = format!("avatars/users/{}/{}.webp", user_id, uuid::Uuid::new_v4());
+
+        // let upload_url = self
+        //     .r2_storage
+        //     .presign_put(
+        //         AssetKind::Avatar,
+        //         &key,
+        //         "image/webp",
+        //         Duration::from_secs(15 * 60),
+        //     )
+        //     .await?;
+
+        let kind = AssetKind::Avatar;
+
+        if !kind.allowed_content_types().contains(&content_type) {
+            return Err(AppError::NotFound("unsupported content type".into()));
+        }
+
+        let key = format!("avatars/users/{}/{}.webp", user_id, uuid::Uuid::new_v4());
+
+        let upload_url = self
+            .storage
+            .presign_put(kind, &key, content_type, Duration::from_secs(15 * 60))
+            .await?;
+
+        Ok(UploadAvatarResponse { key, upload_url })
     }
 }
