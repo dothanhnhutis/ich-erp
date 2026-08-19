@@ -26,7 +26,7 @@ pub struct AppConfig {
     /// Base URL của web app (dùng dựng link đặt mật khẩu).
     pub app_web_url: String,
     /// TTL của token thiết lập tài khoản INIT (giây). Mặc định 24h.
-    pub password_token_ttl_secs: i64,
+    pub password_token_ttl_secs: u64,
     /// TTL của token đặt lại mật khẩu RESET (giây). Mặc định 4h.
     pub reset_password_token_ttl_secs: i64,
 }

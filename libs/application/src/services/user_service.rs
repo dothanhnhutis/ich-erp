@@ -1,20 +1,25 @@
 use crate::{
     dto::{
         pagination_dto::{PaginatedResponse, PaginationParams},
-        user_dto::{CreateUserRequest, CreateUserResponse, UpdateUserRequest, UserResponse},
+        user_dto::{
+            CreateUserRequest, CreateUserResponse, UpdateUserRequest, UploadAvatarResponse,
+            UserResponse,
+        },
     },
     errors::AppError,
     ports::EmailPublisher,
     security::session_token::SessionToken,
 };
-use chrono::{Duration, Utc};
+use std::time::Duration;
+
+use chrono::Utc;
 use domain::{
     entities::{
         password_token::{NewPasswordToken, PasswordTokenType},
         user::{NewUser, User, UserStatus, UserUpdate},
     },
     repositories::{PasswordTokenRepository, RoleRepository, UserRepository},
-    upload::ObjectStorage,
+    upload::{AssetKind, ObjectStorage},
 };
 use shared::messaging::{EmailJob, SetPasswordEmail};
 use std::str::FromStr;
@@ -48,10 +53,10 @@ where
     email_publisher: EP,
     r2_storage: R2,
     app_web_url: String,
-    token_ttl_secs: i64,
+    token_ttl_secs: u64,
 }
 
-impl<UR, RR, PTR, EP> UserService<UR, RR, PTR, EP>
+impl<UR, RR, PTR, EP, R2> UserService<UR, RR, PTR, EP, R2>
 where
     UR: UserRepository,
     RR: RoleRepository,
@@ -66,7 +71,7 @@ where
         email_publisher: EP,
         r2_storage: R2,
         app_web_url: String,
-        token_ttl_secs: i64,
+        token_ttl_secs: u64,
     ) -> Self {
         Self {
             user_repo,
@@ -82,7 +87,7 @@ where
     // Sinh token INIT (raw vào link, hash lưu DB) + publish mail thiết lập tài khoản.
     async fn send_setup_email(&self, user_id: uuid::Uuid, email: &str) -> Result<(), AppError> {
         let token = SessionToken::generate();
-        let expires_at = Utc::now() + Duration::seconds(self.token_ttl_secs);
+        let expires_at = Utc::now() + Duration::from_secs(self.token_ttl_secs);
         self.password_token_repo
             .create(NewPasswordToken {
                 user_id,
@@ -197,8 +202,11 @@ where
     }
 
     // Upload Avatar
-
-    pub async fn upload_avatar(&self, user_id: uuid::Uuid) {
+    pub async fn create_avatar_upload(
+        &self,
+        user_id: uuid::Uuid,
+        content_type: &str,
+    ) -> Result<UploadAvatarResponse, AppError> {
         // let key = format!("avatars/users/{}/{}.webp", user_id, uuid::Uuid::new_v4());
 
         // let upload_url = self
@@ -217,10 +225,18 @@ where
             return Err(AppError::NotFound("unsupported content type".into()));
         }
 
-        let key = format!("avatars/users/{}/{}.webp", user_id, uuid::Uuid::new_v4());
+        let key = format!(
+            "avatars/users/{}/{}.{}",
+            user_id,
+            uuid::Uuid::now_v7(),
+            content_type
+                .split_once('/')
+                .map(|(_, sub_type)| sub_type)
+                .unwrap_or("")
+        );
 
         let upload_url = self
-            .storage
+            .r2_storage
             .presign_put(kind, &key, content_type, Duration::from_secs(15 * 60))
             .await?;
 

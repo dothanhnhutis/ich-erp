@@ -12,7 +12,6 @@ use application::services::{
 };
 use axum::{Router, extract::FromRef};
 use chrono::Duration;
-use domain::upload::ObjectStorage;
 use dotenvy::dotenv;
 use infrastructure::{
     cache::{init_redis, session::RedisSessionCache},
@@ -27,7 +26,7 @@ use infrastructure::{
         pg_user_repositories::PgUserRepository,
         pg_user_session_repositories::PgUserSessionRepository,
     },
-    storage::r2::r2_file_storage::R2Config,
+    storage::r2::r2_file_storage::{R2Config, R2Storage},
 };
 use shared::{
     config::AppConfig,
@@ -50,7 +49,7 @@ struct AppState {
             PgRoleRepository,
             PgPasswordTokenRepository,
             LapinEmailPublisher,
-            ObjectStorage,
+            R2Storage,
         >,
     >,
     account_service:
@@ -80,8 +79,8 @@ async fn main() {
         private_bucket: String::new(),
         public_cdn_base_url: String::new(),
     };
-    let config = aws_config::load_from_env().await;
-    let client = aws_sdk_s3::Client::new(&config);
+    let sdk_config = aws_config::load_from_env().await;
+    let client = aws_sdk_s3::Client::new(&sdk_config);
 
     let r2_stograge = R2Storage::new(client, r2_config);
 

@@ -94,7 +94,6 @@ use aws_sdk_s3::{
     Client,
     error::SdkError,
     presigning::PresigningConfig,
-    primitives::ByteStream,
     types::{CompletedMultipartUpload, CompletedPart as S3CompletedPart},
 };
 use std::time::Duration;

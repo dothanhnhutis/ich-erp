@@ -1,4 +1,4 @@
-use domain::{errors::DomainError, repositories::RepositoryError};
+use domain::{errors::DomainError, repositories::RepositoryError, upload::StorageError};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -54,6 +54,18 @@ impl From<RepositoryError> for AppError {
             // DB chứa dữ liệu domain coi là sai → lỗi hệ thống, KHÔNG phải lỗi client
             RepositoryError::Mapping(d) => AppError::Internal(d.to_string()),
             RepositoryError::Unexpected(err) => AppError::Internal(err.to_string()),
+        }
+    }
+}
+
+impl From<StorageError> for AppError {
+    fn from(e: StorageError) -> Self {
+        match e {
+            StorageError::Unavailable(err) => AppError::Internal(err.to_string()),
+            StorageError::Unauthorized => AppError::Internal(String::new()),
+            StorageError::NotFound { key } => AppError::Internal(key.to_string()),
+            StorageError::InvalidRequest(err) => AppError::Internal(err.to_string()),
+            StorageError::Internal(err) => AppError::Internal(err.to_string()),
         }
     }
 }

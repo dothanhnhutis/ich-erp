@@ -22,7 +22,7 @@ pub struct SetPasswordEmail {
     /// Link thiết lập tài khoản (đã kèm token thô).
     pub set_password_url: String,
     /// Số giờ trước khi link hết hạn (hiển thị trong mail).
-    pub expires_in_hours: i64,
+    pub expires_in_hours: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -17,3 +17,4 @@ lapin.workspace = true
 tokio.workspace = true
 deadpool.workspace = true
 aws-sdk-s3.workspace = true
+chrono.workspace = true

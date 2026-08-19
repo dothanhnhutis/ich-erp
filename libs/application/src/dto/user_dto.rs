@@ -61,3 +61,9 @@ pub struct CreateUserRequest {
 pub struct CreateUserResponse {
     pub user_id: String,
 }
+
+#[derive(Debug, serde::Serialize)]
+pub struct UploadAvatarResponse {
+    pub key: String,
+    pub upload_url: String,
+}

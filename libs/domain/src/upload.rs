@@ -132,7 +132,7 @@ impl AssetKind {
 
     pub fn allowed_content_types(self) -> &'static [&'static str] {
         match self {
-            Self::Avatar => &["image/png", "image/jpeg", "image/webp"],
+            Self::Avatar => &["image/png", "image/jpeg", "image/jpg", "image/webp"],
             Self::Document => &[
                 "application/pdf",
                 "application/msword",
